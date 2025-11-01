@@ -15,6 +15,6 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "../emr/src/EMRApp.tsx", "../emr/src/components/Header.tsx", "../emr/src/components/PatientMainSection.tsx.old", "../emr/src/components/PatientSidebar.tsx.old", "../emr/src/components/PatientTopMenu.tsx.old"],
+  "include": ["src", "../emr/src/EMRApp.tsx", "../emr/src/Header.tsx", "../emr/src/PatientMainSection.tsx", "../emr/src/PatientSidebar.tsx", "../emr/src/PatientTopMenu.tsx"],
   "exclude": ["dist"]
 }

@@ -79,7 +79,7 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
     }
   }
 
-  if (!questionnaire) {
+  if (!props.encounter) {
     return <Loading />;
   }
 

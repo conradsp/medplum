@@ -1,0 +1,20 @@
+{
+  "resourceType": "ValueSet",
+  "id": "custom-encounter-types",
+  "url": "http://example.com/fhir/ValueSet/custom-encounter-types",
+  "status": "active",
+  "name": "CustomEncounterTypes",
+  "title": "Custom Encounter Types",
+  "compose": {
+    "include": [
+      {
+        "concept": [
+          { "code": "inpatient", "display": "Inpatient" },
+          { "code": "outpatient", "display": "Outpatient" },
+          { "code": "telehealth", "display": "Telehealth" }
+        ],
+        "system": "http://example.com/fhir/CodeSystem/custom-encounter-types"
+      }
+    ]
+  }
+}
