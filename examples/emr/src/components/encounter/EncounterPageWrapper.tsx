@@ -1,6 +1,6 @@
 import { Container } from '@mantine/core';
 import { JSX, useEffect, useState } from 'react';
-import { EncounterPage } from '../../pages/encounter/EncounterPage.tsx';
+import { EncounterPage } from '../../pages/encounter/EncounterPage';
 import { BreadcrumbNav } from '../shared/BreadcrumbNav';
 import { logger } from '../../utils/logger';
 import { useParams } from 'react-router';

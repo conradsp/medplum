@@ -1,4 +1,4 @@
-import { Modal, Button, TextInput, NumberInput, Stack, Group, Text, Divider } from '@mantine/core';
+import { Modal, Button, NumberInput, Stack, Group, Text, Divider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMedplum } from '@medplum/react';
 import { Observation, Encounter, Patient, Reference } from '@medplum/fhirtypes';

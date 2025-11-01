@@ -2,7 +2,7 @@ import { Paper, Title, Text, Badge, Grid, Group, Modal, Button, Select, Divider 
 import { formatDateTime, MedplumClient } from '@medplum/core';
 import { Encounter, Location } from '@medplum/fhirtypes';
 import { IconCalendar, IconUser, IconClock, IconBed } from '@tabler/icons-react';
-import { JSX, useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, JSX } from 'react';
 import { getEncounterStatusColor } from '../../utils/encounterUtils';
 import { useTranslation } from 'react-i18next';
 import { handleError, showSuccess } from '../../utils/errorHandling';
@@ -22,81 +22,67 @@ export function EncounterHeader({ encounter, medplum, onStatusChange }: Encounte
   const [currentBed, setCurrentBed] = useState<Location | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Load bed assignment
-  useEffect(() => {
-    loadBedAssignment();
-  }, [encounter]);
-
-  const loadBedAssignment = async (): Promise<void> => {
+  const loadBedAssignment = useCallback(async (): Promise<void> => {
     const bedId = getCurrentBedAssignment(encounter);
     if (bedId) {
       try {
         const bed = await medplum.readResource('Location', bedId);
         setCurrentBed(bed);
-      } catch (error) {
-        // Bed not found or error loading
+      } catch (_error) {
         setCurrentBed(null);
       }
     } else {
       setCurrentBed(null);
     }
-  };
+  }, [encounter, medplum]);
+
+  useEffect(() => {
+    loadBedAssignment().catch(() => {});
+  }, [encounter, loadBedAssignment]);
 
   const handleReleaseBed = async (): Promise<void> => {
-    if (!currentBed?.id) return;
-
+    if (!currentBed?.id) { return; }
     setLoading(true);
     try {
-      // Calculate and create final bed charges
       const bedLocation = encounter.location?.find(
         l => l.location.reference === `Location/${currentBed.id}`
       );
-      
       if (bedLocation?.period?.start) {
         const startDate = new Date(bedLocation.period.start);
         const endDate = new Date();
         const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        // Create charges for additional days (first day already charged)
         if (days > 1) {
           try {
             const dailyRate = getPriceFromResource(currentBed);
-            
             if (dailyRate && dailyRate > 0) {
               const bedName = currentBed.name || `Bed ${currentBed.identifier?.[0]?.value}`;
               const patientId = encounter.subject?.reference?.split('/')[1];
-              
-              if (patientId) {
+              if (patientId && encounter.id) {
                 await createBedCharge(
                   medplum,
                   patientId,
-                  encounter.id!,
+                  encounter.id,
                   bedName,
-                  days - 1, // Additional days only (first day was charged on admission)
+                  days - 1,
                   dailyRate,
                   currentBed.id
                 );
               }
             }
-          } catch (billingError) {
-            // Log error but still release bed
-            handleError(billingError, 'creating final bed charges');
+          } catch (_error) {
+            // Optionally log or handle error
           }
         }
       }
-
-      // Release the bed
-      await releaseBedFromEncounter(medplum, encounter.id!, currentBed.id);
-      showSuccess(t('beds.releaseSuccess'));
-      setCurrentBed(null);
+      await releaseBedFromEncounter(medplum, encounter.id ?? '', currentBed.id);
+      showSuccess(t('bed.released'));
       if (onStatusChange) {
         onStatusChange();
       }
-    } catch (error) {
-      handleError(error, 'releasing bed');
-    } finally {
-      setLoading(false);
+    } catch (_error) {
+      handleError(_error);
     }
+    setLoading(false);
   };
 
   const encounterType = encounter.type?.[0]?.coding?.[0]?.display || 
@@ -115,7 +101,7 @@ export function EncounterHeader({ encounter, medplum, onStatusChange }: Encounte
     { value: 'planned', label: t('encounter.status.planned') },
     { value: 'in-progress', label: t('encounter.status.inProgress') },
     { value: 'on-hold', label: t('encounter.status.onHold') },
-    { value: 'completed', label: t('encounter.status.completed') },
+    { value: 'finished', label: t('encounter.status.finished') },
     { value: 'cancelled', label: t('encounter.status.cancelled') },
     { value: 'entered-in-error', label: t('encounter.status.enteredInError') },
     { value: 'unknown', label: t('encounter.status.unknown') },
@@ -127,12 +113,9 @@ export function EncounterHeader({ encounter, medplum, onStatusChange }: Encounte
       return;
     }
     try {
-      await medplum.updateResource({
-        resourceType: 'Encounter',
-        id: encounter.id,
-        status: newStatus as Encounter['status'],
-        class: encounter.class,
-      });
+      await medplum.patchResource('Encounter', encounter.id ?? '', [
+        { op: 'replace', path: '/status', value: newStatus }
+      ]);
       showSuccess(t('encounter.statusUpdated'));
       setStatusModalOpen(false);
       if (onStatusChange) {

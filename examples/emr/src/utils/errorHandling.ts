@@ -184,13 +184,14 @@ export async function withErrorHandling<T>(
 /**
  * Validation helper
  */
-export function validateRequired(value: any, fieldName: string): void {
-  if (!value || (typeof value === 'string' && !value.trim())) {
-    throw new EMRError(
-      `${fieldName} is required`,
-      ErrorType.VALIDATION
-    );
+export function validateRequired(fields: Record<string, any>): string[] {
+  const errors: string[] = [];
+  for (const [fieldName, value] of Object.entries(fields)) {
+    if (!value || (typeof value === 'string' && !value.trim())) {
+      errors.push(`${fieldName} is required`);
+    }
   }
+  return errors;
 }
 
 /**

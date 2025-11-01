@@ -83,17 +83,16 @@ export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProp
   }, [test, opened]);
 
   // Handlers for result fields
-  const handleFieldChange = (idx: number, field: Partial<LabTestResultField>) => {
+  const handleFieldChange = (idx: number, field: Partial<LabTestResultField>): void => {
     setResultFields(fields => fields.map((f, i) => i === idx ? { ...f, ...field } : f));
   };
-  const handleAddField = () => {
+  const handleAddField = (): void => {
     setResultFields(fields => [...fields, { name: '', label: '', type: 'string' }]);
   };
-  const handleRemoveField = (idx: number) => {
+  const handleRemoveField = (idx: number): void => {
     setResultFields(fields => fields.filter((_, i) => i !== idx));
   };
-
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     if (!display.trim()) {
       notifications.show({
         title: 'Validation Error',
@@ -133,7 +132,7 @@ export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProp
         color: 'green',
       });
       onClose(true);
-    } catch (error) {
+    } catch (_error) {
       notifications.show({
         title: 'Error',
         message: 'Failed to save lab test',

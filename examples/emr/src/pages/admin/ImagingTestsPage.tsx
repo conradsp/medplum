@@ -1,6 +1,6 @@
-import { useState, useEffect, JSX } from 'react';
-import { Container, Title, Button, Table, Group, Stack, Text, Badge, ActionIcon, Menu } from '@mantine/core';
-import { IconPlus, IconRefresh, IconDots, IconEdit, IconTrash } from '@tabler/icons-react';
+import { useState, useEffect, useCallback, JSX } from 'react';
+import { Container, Title, Button, Table, Group, Stack, Text, Badge } from '@mantine/core';
+import { IconPlus, IconRefresh, IconEdit, IconTrash } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
 import { ActivityDefinition } from '@medplum/fhirtypes';
 import { notifications } from '@mantine/notifications';
@@ -16,18 +16,18 @@ export function ImagingTestsPage(): JSX.Element {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTest, setSelectedTest] = useState<ActivityDefinition | null>(null);
 
-  const loadImagingTests = async () => {
+  const loadImagingTests = useCallback(async (): Promise<void> => {
     setLoading(true);
     const tests = await getImagingTests(medplum);
     setImagingTests(tests);
     setLoading(false);
-  };
+  }, [medplum]);
 
   useEffect(() => {
-    loadImagingTests();
-  }, []);
+    loadImagingTests().catch(() => {});
+  }, [loadImagingTests]);
 
-  const handleInitializeDefaults = async () => {
+  const handleInitializeDefaults = async (): Promise<void> => {
     try {
       await initializeDefaultImagingTests(medplum);
       notifications.show({
@@ -36,7 +36,7 @@ export function ImagingTestsPage(): JSX.Element {
         color: 'green',
       });
       await loadImagingTests();
-    } catch (error) {
+    } catch (_error) {
       notifications.show({
         title: 'Error',
         message: 'Failed to initialize default imaging tests',
@@ -45,21 +45,20 @@ export function ImagingTestsPage(): JSX.Element {
     }
   };
 
-  const handleEdit = (test: ActivityDefinition) => {
+  const handleEdit = (test: ActivityDefinition): void => {
     setSelectedTest(test);
     setEditModalOpen(true);
   };
 
-  const handleCreate = () => {
+  const handleCreate = (): void => {
     setSelectedTest(null);
     setEditModalOpen(true);
   };
 
-  const handleDelete = async (test: ActivityDefinition) => {
-    if (!test.identifier || !test.identifier[0]?.value) {
+  const handleDelete = async (test: ActivityDefinition): Promise<void> => {
+    if (!test.identifier?.[0]?.value) {
       return;
     }
-
     if (window.confirm(`Are you sure you want to delete "${test.title}"?`)) {
       try {
         await deleteImagingTest(medplum, test.identifier[0].value);
@@ -69,7 +68,7 @@ export function ImagingTestsPage(): JSX.Element {
           color: 'green',
         });
         await loadImagingTests();
-      } catch (error) {
+      } catch (_error) {
         notifications.show({
           title: 'Error',
           message: 'Failed to delete imaging test',
@@ -79,7 +78,7 @@ export function ImagingTestsPage(): JSX.Element {
     }
   };
 
-  const handleModalClose = async (saved: boolean) => {
+  const handleModalClose = async (saved: boolean): Promise<void> => {
     setEditModalOpen(false);
     setSelectedTest(null);
     if (saved) {
@@ -103,127 +102,123 @@ export function ImagingTestsPage(): JSX.Element {
   };
 
   // Group tests by category
-  const testsByCategory = imagingTests.reduce((acc, test) => {
+  const testsByCategory = imagingTests.reduce<Record<string, ActivityDefinition[]>>((acc, test) => {
     const category = getCategory(test);
     if (!acc[category]) {
       acc[category] = [];
     }
     acc[category].push(test);
     return acc;
-  }, {} as Record<string, ActivityDefinition[]>);
+  }, {});
+
+  let content: JSX.Element;
+  if (loading) {
+    content = <Text>Loading...</Text>;
+  } else if (imagingTests.length === 0) {
+    content = (
+      <Stack align="center" py="xl">
+        <Text c="dimmed">No imaging tests configured</Text>
+        <Button onClick={handleInitializeDefaults}>Initialize Default Imaging Tests</Button>
+      </Stack>
+    );
+  } else {
+    content = (
+      <Stack gap="xl">
+        {Object.entries(testsByCategory).sort().map(([category, tests]) => (
+          <div key={category}>
+            <Title order={3} size="h4" mb="md">
+              {category}
+              <Badge ml="sm" size="lg" variant="light">{tests.length}</Badge>
+            </Title>
+            <Table striped highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Test Name</Table.Th>
+                  <Table.Th>LOINC Code</Table.Th>
+                  <Table.Th>Body Part</Table.Th>
+                  <Table.Th>Modality</Table.Th>
+                  <Table.Th>Price</Table.Th>
+                  <Table.Th>Description</Table.Th>
+                  <Table.Th style={{ width: '80px' }}>Actions</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {tests.map((test) => (
+                  <Table.Tr key={test.id}>
+                    <Table.Td>
+                      <Text fw={500}>{test.title}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c="dimmed">
+                        {test.code?.coding?.[0]?.code || 'N/A'}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{getBodyPart(test)}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge size="sm" variant="light">{getModality(test)}</Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" fw={500}>
+                        ${(getPriceFromResource(test) || 0).toFixed(2)}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c="dimmed" lineClamp={1}>
+                        {test.description || '—'}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={<IconEdit size={14} />}
+                          color="blue"
+                          onClick={() => handleEdit(test)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={<IconTrash size={14} />}
+                          color="red"
+                          onClick={() => handleDelete(test)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </div>
+        ))}
+      </Stack>
+    );
+  }
 
   return (
     <Container size="xl" style={{ paddingTop: '20px', paddingBottom: '40px' }}>
       <BreadcrumbNav />
-      
       <Group justify="space-between" mb="xl">
         <div>
           <Title order={2}>Imaging Tests Catalog</Title>
           <Text c="dimmed" size="sm">Manage available imaging studies</Text>
         </div>
         <Group>
-          <Button
-            leftSection={<IconRefresh size={16} />}
-            variant="light"
-            onClick={handleInitializeDefaults}
-          >
+          <Button leftSection={<IconRefresh size={16} />} variant="light" onClick={handleInitializeDefaults}>
             Initialize Defaults
           </Button>
-          <Button
-            leftSection={<IconPlus size={16} />}
-            onClick={handleCreate}
-          >
+          <Button leftSection={<IconPlus size={16} />} onClick={handleCreate}>
             Add Imaging Test
           </Button>
         </Group>
       </Group>
-
-      {loading ? (
-        <Text>Loading...</Text>
-      ) : imagingTests.length === 0 ? (
-        <Stack align="center" py="xl">
-          <Text c="dimmed">No imaging tests configured</Text>
-          <Button onClick={handleInitializeDefaults}>Initialize Default Imaging Tests</Button>
-        </Stack>
-      ) : (
-        <Stack gap="xl">
-          {Object.entries(testsByCategory).sort().map(([category, tests]) => (
-            <div key={category}>
-              <Title order={3} size="h4" mb="md">
-                {category}
-                <Badge ml="sm" size="lg" variant="light">{tests.length}</Badge>
-              </Title>
-              <Table striped highlightOnHover>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>Test Name</Table.Th>
-                    <Table.Th>LOINC Code</Table.Th>
-                    <Table.Th>Body Part</Table.Th>
-                    <Table.Th>Modality</Table.Th>
-                    <Table.Th>Price</Table.Th>
-                    <Table.Th>Description</Table.Th>
-                    <Table.Th style={{ width: '80px' }}>Actions</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {tests.map((test) => (
-                    <Table.Tr key={test.id}>
-                      <Table.Td>
-                        <Text fw={500}>{test.title}</Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" c="dimmed">
-                          {test.code?.coding?.[0]?.code || 'N/A'}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm">{getBodyPart(test)}</Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Badge size="sm" variant="light">{getModality(test)}</Badge>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" fw={500}>
-                          ${(getPriceFromResource(test) || 0).toFixed(2)}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" c="dimmed" lineClamp={1}>
-                          {test.description || '—'}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Menu position="bottom-end">
-                          <Menu.Target>
-                            <ActionIcon variant="subtle" color="gray">
-                              <IconDots size={16} />
-                            </ActionIcon>
-                          </Menu.Target>
-                          <Menu.Dropdown>
-                            <Menu.Item
-                              leftSection={<IconEdit size={14} />}
-                              onClick={() => handleEdit(test)}
-                            >
-                              Edit
-                            </Menu.Item>
-                            <Menu.Item
-                              leftSection={<IconTrash size={14} />}
-                              color="red"
-                              onClick={() => handleDelete(test)}
-                            >
-                              Delete
-                            </Menu.Item>
-                          </Menu.Dropdown>
-                        </Menu>
-                      </Table.Td>
-                    </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </div>
-          ))}
-        </Stack>
-      )}
+      {content}
 
       <EditImagingTestModal
         opened={editModalOpen}

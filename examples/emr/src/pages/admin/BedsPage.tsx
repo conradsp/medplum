@@ -121,12 +121,20 @@ export function BedsPage(): JSX.Element {
             code: getOperationalStatusCode(formData.status),
             display: formData.status,
           },
-          extension: [{
-            url: 'http://example.org/fhir/StructureDefinition/room-number',
-            valueString: formData.roomNumber,
-          }],
+          extension: [
+            {
+              url: 'http://example.org/fhir/StructureDefinition/room-number',
+              valueString: formData.roomNumber,
+            },
+            {
+              url: 'http://example.org/fhir/StructureDefinition/department-name',
+              valueString: departments.find(d => d.id === formData.departmentId)?.name || ''
+            }
+          ],
         };
-        const bedWithPrice = setPriceOnResource(updatedBed, formData.dailyRate || 0);
+        // Remove departmentName before sending to FHIR server
+        const { departmentName, ...locationResource } = updatedBed;
+        const bedWithPrice = setPriceOnResource(locationResource, formData.dailyRate || 0);
         await updateBed(medplum, bedWithPrice);
         showSuccess(t('beds.bedUpdateSuccess'));
       } else {
@@ -135,7 +143,8 @@ export function BedsPage(): JSX.Element {
         const createdBeds = await getBeds(medplum);
         const latestBed = createdBeds.find(b => b.identifier?.[0]?.value === formData.bedNumber);
         if (latestBed && formData.dailyRate) {
-          const bedWithPrice = setPriceOnResource(latestBed, formData.dailyRate);
+          const { departmentName: _unused, ...locationResource } = latestBed;
+          const bedWithPrice = setPriceOnResource(locationResource, formData.dailyRate);
           await updateBed(medplum, bedWithPrice);
         }
         showSuccess(t('beds.bedAddSuccess'));
@@ -203,7 +212,7 @@ export function BedsPage(): JSX.Element {
   const filteredBeds = beds.filter(bed =>
     bed.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bed.identifier?.[0]?.value?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bed.departmentName?.toLowerCase().includes(searchTerm.toLowerCase())
+    (bed.departmentName ? bed.departmentName.toLowerCase().includes(searchTerm.toLowerCase()) : false)
   );
 
   const bedTypeOptions = [

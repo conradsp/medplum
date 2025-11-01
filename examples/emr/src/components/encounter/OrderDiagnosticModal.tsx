@@ -1,4 +1,4 @@
-import { JSX, useState, useEffect } from 'react';
+import { JSX, useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Group, Stack, Select, Textarea, Text, Tabs, MultiSelect, Radio, Divider } from '@mantine/core';
 import { useMedplum } from '@medplum/react';
 import { Patient, Encounter, ServiceRequest, ActivityDefinition, Organization } from '@medplum/fhirtypes';
@@ -40,6 +40,28 @@ export function OrderDiagnosticModal({ opened, onClose, patient, encounter }: Or
   const [clinicalNotes, setClinicalNotes] = useState('');
   const [reasonForOrder, setReasonForOrder] = useState('');
 
+  const loadCatalogs = useCallback(async (): Promise<void> => {
+    setCatalogsLoading(true);
+    try {
+      const [labs, imaging, provs] = await Promise.all([
+        getLabTests(medplum),
+        getImagingTests(medplum),
+        getDiagnosticProviders(medplum),
+      ]);
+      setLabTests(labs);
+      setImagingTests(imaging);
+      setProviders(provs.filter(p => p.active !== false));
+    } catch (_error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to load diagnostic catalogs',
+        color: 'red',
+      });
+    } finally {
+      setCatalogsLoading(false);
+    }
+  }, [medplum]);
+
   useEffect(() => {
     if (opened) {
       // Reset form
@@ -50,32 +72,9 @@ export function OrderDiagnosticModal({ opened, onClose, patient, encounter }: Or
       setSpecimenDetails('');
       setClinicalNotes('');
       setReasonForOrder('');
-      loadCatalogs();
+      loadCatalogs().catch(() => {});
     }
-  }, [opened]);
-
-  const loadCatalogs = async () => {
-    setCatalogsLoading(true);
-    try {
-      const [labs, imaging, provs] = await Promise.all([
-        getLabTests(medplum),
-        getImagingTests(medplum),
-        getDiagnosticProviders(medplum),
-      ]);
-      
-      setLabTests(labs);
-      setImagingTests(imaging);
-      setProviders(provs.filter(p => p.active !== false));
-    } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to load diagnostic catalogs',
-        color: 'red',
-      });
-    } finally {
-      setCatalogsLoading(false);
-    }
-  };
+  }, [opened, loadCatalogs]);
 
   const handleSubmit = async () => {
     if (selectedTests.length === 0) {
@@ -103,8 +102,8 @@ export function OrderDiagnosticModal({ opened, onClose, patient, encounter }: Or
       
       // Create a ServiceRequest for each selected test
       for (const testId of selectedTests) {
-        const test = currentTests.find(t => t.id === testId);
-        if (!test) continue;
+        const test = currentTests.find(t => t?.id === testId);
+        if (!test) { continue; }
 
         const serviceRequest: ServiceRequest = {
           resourceType: 'ServiceRequest',
@@ -171,19 +170,21 @@ export function OrderDiagnosticModal({ opened, onClose, patient, encounter }: Or
           if (price && price > 0) {
             const testName = test.title || test.code?.text || 'Test';
             if (orderType === 'lab') {
-              await createLabCharge(
-                medplum,
-                patient.id!,
-                encounter.id!,
-                testName,
-                price,
-                createdServiceRequest.id
-              );
-            } else {
+              if (patient.id && encounter.id) {
+                await createLabCharge(
+                  medplum,
+                  patient.id,
+                  encounter.id,
+                  testName,
+                  price,
+                  createdServiceRequest.id
+                );
+              }
+            } else if (patient.id && encounter.id) {
               await createImagingCharge(
                 medplum,
-                patient.id!,
-                encounter.id!,
+                patient.id,
+                encounter.id,
                 testName,
                 price,
                 createdServiceRequest.id
@@ -215,13 +216,13 @@ export function OrderDiagnosticModal({ opened, onClose, patient, encounter }: Or
   };
 
   // Only compute options when not loading to avoid undefined errors
-  const getTestOptions = () => {
-    if (catalogsLoading || !labTests || !imagingTests) return [];
+  const getTestOptions = (): { value: string; label: string }[] => {
+    if (catalogsLoading || !labTests || !imagingTests) { return []; }
     try {
       const currentTests = orderType === 'lab' ? labTests : imagingTests;
-      if (!Array.isArray(currentTests)) return [];
+      if (!Array.isArray(currentTests)) { return []; }
       return currentTests
-        .filter(t => t && t.id && t.title) // Only include valid tests
+        .filter(t => t?.id && t?.title)
         .map(t => {
           const category = (t.extension || []).find(e => e.url === 'category')?.valueString;
           return {
@@ -230,27 +231,20 @@ export function OrderDiagnosticModal({ opened, onClose, patient, encounter }: Or
           };
         });
     } catch (error) {
-      logger.error('Error getting test options', error);
+      handleError(error, 'Error getting test options');
       return [];
     }
   };
 
-  const getProviderOptions = () => {
-    if (catalogsLoading || !providers) return [];
+  const getProviderOptions = (): { value: string; label: string }[] => {
+    if (catalogsLoading || !providers) { return []; }
     try {
-      if (!Array.isArray(providers)) return [];
+      if (!Array.isArray(providers)) { return []; }
       return providers
-        .filter(p => p && p.id && p.name) // Only include valid providers
-        .filter(p => {
-          const type = (p.extension || []).find(e => e.url === 'diagnosticType')?.valueString;
-          return type === 'both' || type === orderType;
-        })
-        .map(p => ({
-          value: String(p.id),
-          label: String(p.name),
-        }));
+        .filter(p => p?.id && p?.name)
+        .map(p => ({ value: String(p.id), label: String(p.name) }));
     } catch (error) {
-      logger.error('Error getting provider options', error);
+      handleError(error, 'Error getting provider options');
       return [];
     }
   };

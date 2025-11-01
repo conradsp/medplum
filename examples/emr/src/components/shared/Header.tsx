@@ -28,18 +28,17 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
 
   // Load EMR settings on mount and when settings change
   useEffect(() => {
-    const loadSettings = async () => {
+    const loadSettings = async (): Promise<void> => {
       const settings = await getEMRSettings(medplum);
       if (settings) {
         setEmrName(settings.name || 'Medplum EMR');
         setEmrLogo(settings.logo || null);
       }
     };
-    loadSettings();
+    loadSettings().catch(() => {});
 
-    // Listen for settings changes
-    const handleSettingsChange = () => {
-      loadSettings();
+    const handleSettingsChange = (): void => {
+      loadSettings().catch(() => {});
     };
     window.addEventListener('emr-settings-changed', handleSettingsChange);
 
@@ -76,7 +75,7 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
       })) || [];
       
       setResults(mappedResults);
-    } catch (error) {
+    } catch (_error) {
       setResults([]);
     }
   };
@@ -87,7 +86,7 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
       setSearch('');
       setResults([]);
       onPatientSelect(found.resource);
-      navigate(`/patient/${found.resource.id}`);
+      void navigate(`/patient/${found.resource.id}`);
     }
   };
 

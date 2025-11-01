@@ -224,24 +224,26 @@ async function updateInventoryAfterAdministration(
   medicationId: string,
   quantity: number
 ): Promise<void> {
+  // Fetch the Medication resource to get its RxNorm code
+  const medication = await medplum.readResource('Medication', medicationId);
+  const rxnormCode = medication.code?.coding?.find(c => c.system === 'http://www.nlm.nih.gov/research/umls/rxnorm')?.code;
+  if (!rxnormCode) {
+    return;
+  }
   // Search for MedicationKnowledge resource that tracks inventory
   const result = await medplum.search('MedicationKnowledge', {
-    'code:code': medicationId,
+    'code': rxnormCode,
     _count: '1',
   });
-
   if (result.entry && result.entry.length > 0) {
     const medKnowledge = result.entry[0].resource as MedicationKnowledge;
-    
     // Update the packaging information to reflect new stock
     if (medKnowledge.packaging) {
       const currentQuantity = medKnowledge.packaging.quantity?.value || 0;
       const newQuantity = Math.max(0, currentQuantity - quantity);
-      
       medKnowledge.packaging.quantity = {
         value: newQuantity,
       };
-
       await medplum.updateResource(medKnowledge);
     }
   }
@@ -258,11 +260,16 @@ export async function getMedicationInventory(
   medicationId: string
 ): Promise<MedicationKnowledge | null> {
   try {
+    // Fetch the Medication resource to get its RxNorm code
+    const medication = await medplum.readResource('Medication', medicationId);
+    const rxnormCode = medication.code?.coding?.find(c => c.system === 'http://www.nlm.nih.gov/research/umls/rxnorm')?.code;
+    if (!rxnormCode) {
+      return null;
+    }
     const result = await medplum.search('MedicationKnowledge', {
-      code: medicationId,
+      'code': rxnormCode,
       _count: '1',
     });
-
     if (result.entry && result.entry.length > 0) {
       return result.entry[0].resource as MedicationKnowledge;
     }
@@ -347,17 +354,17 @@ export async function updateMedicationInventory(
         coding: [
           {
             system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
-            code: med.rxcui,
-            display: med.genericName,
+            code: medication.code?.coding?.[0]?.code,
+            display: medication.code?.coding?.[0]?.display,
           },
           // Only add NDC coding if present
-          ...(med.ndc ? [{
+          ...(medication.code?.coding?.find(c => c.system === 'http://hl7.org/fhir/sid/ndc') ? [{
             system: 'http://hl7.org/fhir/sid/ndc',
-            code: med.ndc,
-            display: med.brandName,
+            code: medication.code?.coding?.find(c => c.system === 'http://hl7.org/fhir/sid/ndc')?.code,
+            display: medication.code?.coding?.find(c => c.system === 'http://hl7.org/fhir/sid/ndc')?.display,
           }] : []),
         ],
-        text: med.brandName || med.genericName,
+        text: medication.code?.text || medication.code?.coding?.[0]?.display,
       },
       packaging: {
         quantity: {
@@ -401,6 +408,9 @@ export async function updateMedicationInventory(
 
 /**
  * Get all prescriptions for an encounter
+ * @param medplum - Medplum client instance
+ * @param encounterId - ID of the encounter
+ * @returns Promise resolving to array of MedicationRequest resources
  */
 export async function getEncounterPrescriptions(
   medplum: MedplumClient,
@@ -420,6 +430,9 @@ export async function getEncounterPrescriptions(
 
 /**
  * Get medication administrations for an encounter
+ * @param medplum - Medplum client instance
+ * @param encounterId - ID of the encounter
+ * @returns Promise resolving to array of MedicationAdministration resources
  */
 export async function getEncounterAdministrations(
   medplum: MedplumClient,
@@ -497,7 +510,7 @@ export async function initializeDefaultMedications(medplum: MedplumClient): Prom
         },
       ],
     };
-    if (searchResult.entry && searchResult.entry.length > 0) {
+    if (searchResult.entry?.[0]?.resource) {
       // Update existing
       medicationResource.id = searchResult.entry[0].resource.id;
       await updateMedication(medplum, medicationResource);

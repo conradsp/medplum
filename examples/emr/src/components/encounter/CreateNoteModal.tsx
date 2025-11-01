@@ -19,7 +19,6 @@ interface CreateNoteModalProps {
 export function CreateNoteModal({ opened, onClose, encounter, patient, onSuccess }: CreateNoteModalProps): JSX.Element {
   const { t } = useTranslation();
   const medplum = useMedplum();
-  const [loading, setLoading] = useState(false); // Remove unused loading variable
   const [templates, setTemplates] = useState<Questionnaire[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<Questionnaire | null>(null);
@@ -48,7 +47,6 @@ export function CreateNoteModal({ opened, onClose, encounter, patient, onSuccess
   }, [selectedTemplateId, templates]);
 
   const handleSubmit = async (response: QuestionnaireResponse): Promise<void> => {
-    setLoading(true);
     try {
       // Save the QuestionnaireResponse
       await medplum.createResource(response);
@@ -124,8 +122,6 @@ export function CreateNoteModal({ opened, onClose, encounter, patient, onSuccess
         message: t('notes.saveError'),
         color: 'red',
       });
-    } finally {
-      setLoading(false);
     }
   };
 

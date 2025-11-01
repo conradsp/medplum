@@ -1,6 +1,6 @@
 // Billing utilities using FHIR ChargeItem and Account resources
 import { MedplumClient } from '@medplum/core';
-import { ChargeItem, Account, Patient, Encounter, Reference } from '@medplum/fhirtypes';
+import { ChargeItem, Account, Reference } from '@medplum/fhirtypes';
 
 export interface ChargeItemSummary extends ChargeItem {
   description?: string;
@@ -25,6 +25,15 @@ export interface BillingSummary {
 
 /**
  * Create a charge item for a service
+ * @param medplum - Medplum client instance
+ * @param patientId - ID of the patient
+ * @param encounterId - ID of the encounter
+ * @param description - Description of the service
+ * @param code - Service code
+ * @param quantity - Quantity of service
+ * @param unitPrice - Price per unit
+ * @param serviceReference - Reference to the service
+ * @returns Promise resolving to created ChargeItem resource
  */
 export async function createChargeItem(
   medplum: MedplumClient,
@@ -73,6 +82,14 @@ export async function createChargeItem(
 
 /**
  * Create charge for medication
+ * @param medplum - Medplum client instance
+ * @param patientId - ID of the patient
+ * @param encounterId - ID of the encounter
+ * @param medicationName - Name of the medication
+ * @param quantity - Quantity dispensed
+ * @param unitPrice - Price per unit
+ * @param medicationRequestId - MedicationRequest resource ID
+ * @returns Promise resolving to created ChargeItem resource
  */
 export async function createMedicationCharge(
   medplum: MedplumClient,
@@ -97,6 +114,13 @@ export async function createMedicationCharge(
 
 /**
  * Create charge for lab test
+ * @param medplum - Medplum client instance
+ * @param patientId - ID of the patient
+ * @param encounterId - ID of the encounter
+ * @param testName - Name of the lab test
+ * @param price - Price of the test
+ * @param serviceRequestId - ServiceRequest resource ID
+ * @returns Promise resolving to created ChargeItem resource
  */
 export async function createLabCharge(
   medplum: MedplumClient,
@@ -120,6 +144,13 @@ export async function createLabCharge(
 
 /**
  * Create charge for imaging test
+ * @param medplum - Medplum client instance
+ * @param patientId - ID of the patient
+ * @param encounterId - ID of the encounter
+ * @param testName - Name of the imaging test
+ * @param price - Price of the test
+ * @param serviceRequestId - ServiceRequest resource ID
+ * @returns Promise resolving to created ChargeItem resource
  */
 export async function createImagingCharge(
   medplum: MedplumClient,
@@ -143,6 +174,14 @@ export async function createImagingCharge(
 
 /**
  * Create charge for bed/room (daily rate)
+ * @param medplum - Medplum client instance
+ * @param patientId - ID of the patient
+ * @param encounterId - ID of the encounter
+ * @param bedName - Name of the bed/room
+ * @param days - Number of days
+ * @param dailyRate - Daily rate
+ * @param locationId - Location resource ID
+ * @returns Promise resolving to created ChargeItem resource
  */
 export async function createBedCharge(
   medplum: MedplumClient,
@@ -167,6 +206,12 @@ export async function createBedCharge(
 
 /**
  * Create charge for provider visit
+ * @param medplum - Medplum client instance
+ * @param patientId - ID of the patient
+ * @param encounterId - ID of the encounter
+ * @param visitType - Type of visit
+ * @param price - Price of the visit
+ * @returns Promise resolving to created ChargeItem resource
  */
 export async function createVisitCharge(
   medplum: MedplumClient,
@@ -189,6 +234,9 @@ export async function createVisitCharge(
 
 /**
  * Get all charges for an encounter
+ * @param medplum - Medplum client instance
+ * @param encounterId - ID of the encounter
+ * @returns Promise resolving to array of ChargeItem resources
  */
 export async function getEncounterCharges(
   medplum: MedplumClient,
@@ -219,6 +267,9 @@ export async function getEncounterCharges(
 
 /**
  * Get all charges for a patient
+ * @param medplum - Medplum client instance
+ * @param patientId - ID of the patient
+ * @returns Promise resolving to array of ChargeItem resources
  */
 export async function getPatientCharges(
   medplum: MedplumClient,
@@ -249,6 +300,11 @@ export async function getPatientCharges(
 
 /**
  * Record a payment
+ * @param medplum - Medplum client instance
+ * @param patientId - ID of the patient
+ * @param encounterId - ID of the encounter
+ * @param payment - Payment details
+ * @returns Promise resolving to updated Account resource
  */
 export async function recordPayment(
   medplum: MedplumClient,
@@ -257,7 +313,7 @@ export async function recordPayment(
   payment: PaymentRecord
 ): Promise<Account> {
   // Get or create account for patient
-  let account = await getOrCreatePatientAccount(medplum, patientId);
+  const account = await getOrCreatePatientAccount(medplum, patientId);
 
   // Add payment to account extension
   const payments = account.extension?.filter(
@@ -282,15 +338,15 @@ export async function recordPayment(
         url: 'date',
         valueDateTime: payment.date,
       },
-      {
+      ...(encounterId ? [{
         url: 'encounter',
-        valueReference: encounterId ? { reference: `Encounter/${encounterId}` } : undefined,
-      },
-      {
+        valueReference: { reference: `Encounter/${encounterId}` },
+      }] : []),
+      ...(payment.notes ? [{
         url: 'notes',
         valueString: payment.notes,
-      },
-    ].filter(e => e.valueString !== undefined || e.valueMoney !== undefined || e.valueDateTime !== undefined || e.valueReference !== undefined),
+      }] : []),
+    ],
   });
 
   account.extension = [
@@ -305,6 +361,9 @@ export async function recordPayment(
 
 /**
  * Get or create account for patient
+ * @param medplum - Medplum client instance
+ * @param patientId - ID of the patient
+ * @returns Promise resolving to Account resource
  */
 async function getOrCreatePatientAccount(
   medplum: MedplumClient,
@@ -319,7 +378,7 @@ async function getOrCreatePatientAccount(
     if (result.entry && result.entry.length > 0) {
       return result.entry[0].resource as Account;
     }
-  } catch (error) {
+  } catch (_error) {
     // Account doesn't exist, create it
   }
 
@@ -338,6 +397,10 @@ async function getOrCreatePatientAccount(
 
 /**
  * Get billing summary for an encounter
+ * @param medplum - Medplum client instance
+ * @param encounterId - ID of the encounter
+ * @param patientId - ID of the patient
+ * @returns Promise resolving to billing summary object
  */
 export async function getEncounterBillingSummary(
   medplum: MedplumClient,
@@ -379,6 +442,9 @@ export async function getEncounterBillingSummary(
 
 /**
  * Get billing summary for a patient (all encounters)
+ * @param medplum - Medplum client instance
+ * @param patientId - ID of the patient
+ * @returns Promise resolving to billing summary object
  */
 export async function getPatientBillingSummary(
   medplum: MedplumClient,
@@ -416,6 +482,8 @@ export async function getPatientBillingSummary(
 
 /**
  * Get pricing from resource extensions
+ * @param resource - FHIR resource
+ * @returns Pricing value or undefined
  */
 export function getPriceFromResource(resource: any): number | undefined {
   const priceExt = resource.extension?.find(
@@ -426,6 +494,9 @@ export function getPriceFromResource(resource: any): number | undefined {
 
 /**
  * Set pricing on a resource
+ * @param resource - FHIR resource
+ * @param price - Pricing value
+ * @returns The updated resource
  */
 export function setPriceOnResource(resource: any, price: number): any {
   const otherExtensions = resource.extension?.filter(
