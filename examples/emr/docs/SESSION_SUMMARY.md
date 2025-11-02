@@ -212,7 +212,7 @@ Over this development session, we have accomplished:
 // will be redirected to home page
 
 // To check if user is admin:
-import { isUserAdmin } from './utils/permissions';
+import { isUserAdmin } from './utils/permissionUtils';
 const isAdmin = isUserAdmin(profile);
 ```
 

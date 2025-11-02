@@ -26,11 +26,13 @@ import { RequireAdmin } from './components/auth/RequireAdmin';
 import { Container } from '@mantine/core';
 import { Patient } from '@medplum/fhirtypes';
 import { useMedplum, Loading } from '@medplum/react';
+import { useMembership } from './hooks/usePermissions';
 
 export function EMRApp(): JSX.Element {
   const medplum = useMedplum();
   const [, setPatient] = useState<Patient | null>(null);
   const location = useLocation();
+  const membership = useMembership();
 
   // Show loading while checking authentication
   if (medplum.isLoading()) {
@@ -67,7 +69,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/admin/users"
           element={
-            <RequireAdmin>
+            <RequireAdmin membership={membership!}>
               <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
                 <ManageUsersPage />
               </Container>
@@ -77,7 +79,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/admin/settings"
           element={
-            <RequireAdmin>
+            <RequireAdmin membership={membership!}>
               <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
                 <SettingsPage />
               </Container>
@@ -87,7 +89,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/admin/note-templates"
           element={
-            <RequireAdmin>
+            <RequireAdmin membership={membership!}>
               <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
                 <NoteTemplatesPage />
               </Container>
@@ -97,7 +99,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/admin/appointment-types"
           element={
-            <RequireAdmin>
+            <RequireAdmin membership={membership!}>
               <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
                 <AppointmentTypesPage />
               </Container>
@@ -107,7 +109,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/admin/lab-tests"
           element={
-            <RequireAdmin>
+            <RequireAdmin membership={membership!}>
               <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
                 <LabTestsPage />
               </Container>
@@ -117,7 +119,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/admin/imaging-tests"
           element={
-            <RequireAdmin>
+            <RequireAdmin membership={membership!}>
               <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
                 <ImagingTestsPage />
               </Container>
@@ -127,7 +129,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/admin/diagnostic-providers"
           element={
-            <RequireAdmin>
+            <RequireAdmin membership={membership!}>
               <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
                 <DiagnosticProvidersPage />
               </Container>
@@ -137,7 +139,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/admin/diagnosis-codes"
           element={
-            <RequireAdmin>
+            <RequireAdmin membership={membership!}>
               <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
                 <DiagnosisCodesPage />
               </Container>
@@ -147,7 +149,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/admin/medications"
           element={
-            <RequireAdmin>
+            <RequireAdmin membership={membership!}>
               <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
                 <MedicationCatalogPage />
               </Container>
@@ -157,7 +159,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/admin/inventory"
           element={
-            <RequireAdmin>
+            <RequireAdmin membership={membership!}>
               <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
                 <InventoryPage />
               </Container>
@@ -167,7 +169,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/admin/departments"
           element={
-            <RequireAdmin>
+            <RequireAdmin membership={membership!}>
               <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
                 <DepartmentsPage />
               </Container>
@@ -177,7 +179,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/admin/beds"
           element={
-            <RequireAdmin>
+            <RequireAdmin membership={membership!}>
               <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
                 <BedsPage />
               </Container>

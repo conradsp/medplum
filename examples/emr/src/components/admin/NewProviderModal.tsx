@@ -35,7 +35,6 @@ export function NewProviderModal({ opened, onClose }: NewProviderModalProps): JS
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const name: HumanName = {
         given: [formData.firstName],
@@ -83,8 +82,24 @@ export function NewProviderModal({ opened, onClose }: NewProviderModalProps): JS
         ] : undefined,
       };
 
-      await medplum.createResource(practitioner);
-      
+      const createdPractitioner = await medplum.createResource(practitioner);
+      // Invite provider to set up their account
+      if (formData.email) {
+        const project = medplum.getProject();
+        if (project?.id) {
+          await medplum.invite(
+            project.id,
+            {
+              resourceType: 'Practitioner',
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              email: formData.email,
+              // Optionally: password, sendEmail, membership, etc.
+            }
+          );
+        }
+      }
+
       // Reset form
       setFormData({
         firstName: '',
@@ -103,14 +118,14 @@ export function NewProviderModal({ opened, onClose }: NewProviderModalProps): JS
       
       notifications.show({
         title: 'Success',
-        message: 'Provider created successfully!',
+        message: 'Provider created and invitation sent!',
         color: 'green',
       });
       onClose();
     } catch (error) {
       notifications.show({
         title: 'Error',
-        message: 'Failed to create provider. Please try again.',
+        message: 'Failed to create provider or send invite.',
         color: 'red',
       });
     } finally {

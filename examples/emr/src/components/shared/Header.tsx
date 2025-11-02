@@ -5,10 +5,11 @@ import { useMedplum } from '@medplum/react';
 import { Patient } from '@medplum/fhirtypes';
 import { useNavigate } from 'react-router';
 import { NewProviderModal } from '../admin/NewProviderModal';
-import { isUserAdmin } from '../../utils/permissions';
 import { getEMRSettings } from '../../utils/settings';
 import { LanguageSelector } from './LanguageSelector';
 import { useTranslation } from 'react-i18next';
+import { useFeatureFlags } from '../../hooks/usePermissions';
+import { useAdminStatus } from '../../utils/admin';
 
 interface HeaderProps {
   onPatientSelect: (patient: Patient) => void;
@@ -23,8 +24,10 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const profile = medplum.getProfile();
-  const isAdmin = isUserAdmin(profile);
   const { t } = useTranslation();
+  const flags = useFeatureFlags();
+  const { isAdmin } = useAdminStatus();
+
 
   // Load EMR settings on mount and when settings change
   useEffect(() => {
@@ -138,53 +141,61 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
             style={{ minWidth: 350 }}
           />
 
-          {/* Scheduling Menu */}
-          <Menu>
-            <Menu.Target>
-              <Button 
-                variant="light" 
-                leftSection={<IconCalendar size={16} />}
-                color="grape"
-              >
-                {t('header.scheduling')}
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Label>{t('header.appointments')}</Menu.Label>
-              <Menu.Item
-                leftSection={<IconCalendarTime size={16} />}
-                onClick={() => navigate('/scheduling/book')}
-              >
-                {t('header.bookAppointment')}
-              </Menu.Item>
-              <Menu.Item
-                leftSection={<IconCalendarStats size={16} />}
-                onClick={() => navigate('/scheduling/calendar')}
-              >
-                {t('header.providerCalendar')}
-              </Menu.Item>
-              <Menu.Divider />
-              <Menu.Item
-                leftSection={<IconCalendar size={16} />}
-                onClick={() => navigate('/scheduling/manage')}
-              >
-                {t('header.manageSchedules')}
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
+          {/* Scheduling Menu - Only shown if user has scheduling permissions */}
+          {flags.canViewScheduling && (
+            <Menu>
+              <Menu.Target>
+                <Button 
+                  variant="light" 
+                  leftSection={<IconCalendar size={16} />}
+                  color="grape"
+                >
+                  {t('header.scheduling')}
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Label>{t('header.appointments')}</Menu.Label>
+                <Menu.Item
+                  leftSection={<IconCalendarTime size={16} />}
+                  onClick={() => navigate('/scheduling/book')}
+                >
+                  {t('header.bookAppointment')}
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconCalendarStats size={16} />}
+                  onClick={() => navigate('/scheduling/calendar')}
+                >
+                  {t('header.providerCalendar')}
+                </Menu.Item>
+                {flags.canManageSchedules && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Item
+                      leftSection={<IconCalendar size={16} />}
+                      onClick={() => navigate('/scheduling/manage')}
+                    >
+                      {t('header.manageSchedules')}
+                    </Menu.Item>
+                  </>
+                )}
+              </Menu.Dropdown>
+            </Menu>
+          )}
 
-          {/* Billing Menu */}
-          <Button 
-            variant="light" 
-            leftSection={<IconCash size={16} />}
-            color="teal"
-            onClick={() => navigate('/billing')}
-          >
-            {t('billing.billing')}
-          </Button>
+          {/* Billing Menu - Only shown if user has billing permissions */}
+          {flags.canViewBilling && (
+            <Button 
+              variant="light" 
+              leftSection={<IconCash size={16} />}
+              color="teal"
+              onClick={() => navigate('/billing')}
+            >
+              {t('billing.billing')}
+            </Button>
+          )}
 
-          {/* Admin Menu - Only shown for admins */}
-          {isAdmin && (
+          {/* Admin Menu - Only shown for users with admin permissions */}
+          {(isAdmin || flags.canViewAdmin) && (
             <Menu>
               <Menu.Target>
                 <Button 
@@ -197,94 +208,144 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Label>{t('header.administration')}</Menu.Label>
-                <Menu.Item
-                  leftSection={<IconUserPlus size={16} />}
-                  onClick={() => setNewProviderModalOpen(true)}
-                >
-                  {t('header.addUserProvider')}
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconUsers size={16} />}
-                  onClick={() => navigate('/admin/users')}
-                >
-                  {t('header.manageUsers')}
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Label>{t('header.configuration')}</Menu.Label>
-                <Menu.Item
-                  leftSection={<IconFileText size={16} />}
-                  onClick={() => navigate('/admin/note-templates')}
-                >
-                  {t('header.noteTemplates')}
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconCalendar size={16} />}
-                  onClick={() => navigate('/admin/appointment-types')}
-                >
-                  {t('header.appointmentTypes')}
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconStethoscope size={16} />}
-                  onClick={() => navigate('/admin/diagnosis-codes')}
-                >
-                  {t('header.diagnosisCodes')}
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconPill size={16} />}
-                  onClick={() => navigate('/admin/medications')}
-                >
-                  {t('header.medicationCatalog')}
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconPackage size={16} />}
-                  onClick={() => navigate('/admin/inventory')}
-                >
-                  {t('header.inventory')}
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Label>{t('header.bedManagement')}</Menu.Label>
-                <Menu.Item
-                  leftSection={<IconBuildingHospital size={16} />}
-                  onClick={() => navigate('/admin/departments')}
-                >
-                  {t('header.departments')}
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconBed size={16} />}
-                  onClick={() => navigate('/admin/beds')}
-                >
-                  {t('header.beds')}
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Label>{t('header.diagnosticServices')}</Menu.Label>
-                <Menu.Item
-                  leftSection={<IconFlask size={16} />}
-                  onClick={() => navigate('/admin/lab-tests')}
-                >
-                  {t('header.labTestsCatalog')}
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconPhoto size={16} />}
-                  onClick={() => navigate('/admin/imaging-tests')}
-                >
-                  {t('header.imagingTestsCatalog')}
-                </Menu.Item>
+                {flags.canManageUsers && (
+                  <Menu.Item
+                    leftSection={<IconUsers size={16} />}
+                    onClick={() => navigate('/admin/users')}
+                  >
+                    {t('header.manageUsers')}
+                  </Menu.Item>
+                )}
+                {flags.canManageSettings && (
+                  <Menu.Item
+                    leftSection={<IconSettings size={16} />}
+                    onClick={() => navigate('/admin/settings')}
+                  >
+                    {t('header.settings')}
+                  </Menu.Item>
+                )}
+                
+                {/* Clinical Configuration */}
+                {(flags.canManageNoteTemplates || flags.canManageDiagnosisCodes) && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Label>{t('header.clinicalConfig')}</Menu.Label>
+                  </>
+                )}
+                {flags.canManageNoteTemplates && (
+                  <Menu.Item
+                    leftSection={<IconFileText size={16} />}
+                    onClick={() => navigate('/admin/note-templates')}
+                  >
+                    {t('header.noteTemplates')}
+                  </Menu.Item>
+                )}
+                {flags.canManageDiagnosisCodes && (
+                  <Menu.Item
+                    leftSection={<IconStethoscope size={16} />}
+                    onClick={() => navigate('/admin/diagnosis-codes')}
+                  >
+                    {t('header.diagnosisCodes')}
+                  </Menu.Item>
+                )}
+                
+                {/* Scheduling Configuration */}
+                {flags.canManageAppointmentTypes && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Label>{t('header.schedulingConfig')}</Menu.Label>
+                    <Menu.Item
+                      leftSection={<IconCalendarTime size={16} />}
+                      onClick={() => navigate('/admin/appointment-types')}
+                    >
+                      {t('header.appointmentTypes')}
+                    </Menu.Item>
+                  </>
+                )}
+                
+                {/* Lab & Imaging Configuration */}
+                {(flags.canManageLabTests || flags.canManageImagingTests) && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Label>{t('header.diagnosticConfig')}</Menu.Label>
+                  </>
+                )}
+                {flags.canManageLabTests && (
+                  <Menu.Item
+                    leftSection={<IconFlask size={16} />}
+                    onClick={() => navigate('/admin/lab-tests')}
+                  >
+                    {t('header.labTests')}
+                  </Menu.Item>
+                )}
+                {flags.canManageImagingTests && (
+                  <Menu.Item
+                    leftSection={<IconPhoto size={16} />}
+                    onClick={() => navigate('/admin/imaging-tests')}
+                  >
+                    {t('header.imagingTests')}
+                  </Menu.Item>
+                )}
                 <Menu.Item
                   leftSection={<IconBuilding size={16} />}
                   onClick={() => navigate('/admin/diagnostic-providers')}
                 >
                   {t('header.diagnosticProviders')}
                 </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  leftSection={<IconSettings size={16} />}
-                  onClick={() => navigate('/admin/settings')}
-                >
-                  {t('header.settings')}
-                </Menu.Item>
+                
+                {/* Pharmacy Configuration */}
+                {(flags.canManageMedications || flags.canManageInventory) && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Label>{t('header.pharmacyConfig')}</Menu.Label>
+                  </>
+                )}
+                {flags.canManageMedications && (
+                  <Menu.Item
+                    leftSection={<IconPill size={16} />}
+                    onClick={() => navigate('/admin/medications')}
+                  >
+                    {t('header.medicationCatalog')}
+                  </Menu.Item>
+                )}
+                {flags.canManageInventory && (
+                  <Menu.Item
+                    leftSection={<IconPackage size={16} />}
+                    onClick={() => navigate('/admin/inventory')}
+                  >
+                    {t('header.inventory')}
+                  </Menu.Item>
+                )}
+                
+                {/* Bed Management */}
+                {(flags.canManageDepartments || flags.canManageBeds) && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Label>{t('header.bedManagement')}</Menu.Label>
+                  </>
+                )}
+                {flags.canManageDepartments && (
+                  <Menu.Item
+                    leftSection={<IconBuildingHospital size={16} />}
+                    onClick={() => navigate('/admin/departments')}
+                  >
+                    {t('header.departments')}
+                  </Menu.Item>
+                )}
+                {flags.canManageBeds && (
+                  <Menu.Item
+                    leftSection={<IconBed size={16} />}
+                    onClick={() => navigate('/admin/beds')}
+                  >
+                    {t('header.beds')}
+                  </Menu.Item>
+                )}
               </Menu.Dropdown>
             </Menu>
           )}
+
+          {/* Language Selector */}
+          <LanguageSelector />
 
           {/* User Profile Menu */}
           {profile ? (
@@ -325,10 +386,6 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
             </Button>
           )}
         </Group>
-
-        <div style={{ marginLeft: 'auto' }}>
-          <LanguageSelector />
-        </div>
       </Group>
     </>
   );
