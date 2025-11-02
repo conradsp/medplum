@@ -22,8 +22,11 @@ tar \
   --exclude='*.ts' \
   --exclude='*.tsbuildinfo' \
   -czf medplum-server.tar.gz \
+  LICENSE.txt \
+  NOTICE \
   package.json \
   package-lock.json \
+  packages/bot-layer/package.json \
   packages/ccda/package.json \
   packages/ccda/dist \
   packages/core/package.json \
@@ -33,8 +36,7 @@ tar \
   packages/fhir-router/package.json \
   packages/fhir-router/dist \
   packages/server/package.json \
-  packages/server/dist \
-  packages/server/static
+  packages/server/dist
 
 # Supply chain attestations
 # See: https://docs.docker.com/scout/policy/#supply-chain-attestations

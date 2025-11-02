@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Chip, Group, Modal, NativeSelect, Stack, Switch, TextInput } from '@mantine/core';
 import { formatTiming } from '@medplum/core';
-import { Timing, TimingRepeat } from '@medplum/fhirtypes';
-import { JSX, useContext, useMemo, useRef, useState } from 'react';
+import type { Timing, TimingRepeat } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import { useContext, useMemo, useRef, useState } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 const daysOfWeek = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
@@ -141,7 +144,6 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
                   defaultValue={value.repeat.periodUnit}
                   onChange={(e) => setPeriodUnit(e.currentTarget.value as PeriodUnit | undefined)}
                   data={[
-                    { label: 'second', value: 's' },
                     { label: 'minute', value: 'min' },
                     { label: 'hour', value: 'h' },
                     { label: 'day', value: 'd' },

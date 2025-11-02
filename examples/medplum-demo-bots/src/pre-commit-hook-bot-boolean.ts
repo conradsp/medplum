@@ -1,5 +1,8 @@
-import { BotEvent, MedplumClient, OperationOutcomeError } from '@medplum/core';
-import { Patient, OperationOutcome, Identifier } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import { OperationOutcomeError } from '@medplum/core';
+import type { Identifier, OperationOutcome, Patient } from '@medplum/fhirtypes';
 
 /**
  * HAPI FHIR Server Sync Bot
@@ -90,7 +93,7 @@ async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<boo
     }
 
     // Log successful response
-    const responseData = await response.json();
+    const responseData = (await response.json()) as Patient;
     console.log('Successfully updated patient to HAPI FHIR server:', responseData.id);
     return true;
   } catch (error) {

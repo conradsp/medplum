@@ -1,14 +1,8 @@
-import {
-  Checkbox,
-  ComboboxItem,
-  Group,
-  MultiSelect,
-  NativeSelect,
-  Radio,
-  Text,
-  Textarea,
-  TextInput,
-} from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ComboboxItem } from '@mantine/core';
+import { Checkbox, Group, MultiSelect, NativeSelect, Radio, Text, Textarea, TextInput } from '@mantine/core';
+import type { TypedValue } from '@medplum/core';
 import {
   capitalize,
   deepEquals,
@@ -17,10 +11,9 @@ import {
   getExtension,
   HTTP_HL7_ORG,
   stringify,
-  TypedValue,
   typedValueToString,
 } from '@medplum/core';
-import {
+import type {
   Coding,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
@@ -30,6 +23,7 @@ import {
   ValueSet,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
+import type { QuestionnaireFormLoadedState } from '@medplum/react-hooks';
 import {
   getItemAnswerOptionValue,
   getItemInitialValue,
@@ -37,11 +31,11 @@ import {
   getQuestionnaireItemReferenceFilter,
   getQuestionnaireItemReferenceTargetTypes,
   QUESTIONNAIRE_ITEM_CONTROL_URL,
-  QuestionnaireFormLoadedState,
   QuestionnaireItemType,
   useMedplum,
 } from '@medplum/react-hooks';
-import { ChangeEvent, JSX, useEffect, useState } from 'react';
+import type { ChangeEvent, JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { AttachmentInput } from '../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
@@ -83,7 +77,13 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     return null;
   }
 
-  const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
+  let initial: QuestionnaireItemInitial | undefined = undefined;
+  if (item.initial && item.initial.length > 0) {
+    initial = item.initial[0];
+  } else if (item.answerOption && item.answerOption.length > 0) {
+    initial = item.answerOption.find((option) => option.initialSelected);
+  }
+
   const defaultValue = getCurrentAnswer(response, props.index) ?? getItemInitialValue(initial);
   const validationError = getExtension(
     response,
@@ -119,7 +119,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) =>
-            onChangeAnswer([{ valueDecimal: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber }])
+            onChangeAnswer(e.currentTarget.value === '' ? [] : [{ valueDecimal: e.currentTarget.valueAsNumber }])
           }
         />
       );
@@ -134,7 +134,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) =>
-            onChangeAnswer([{ valueInteger: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber }])
+            onChangeAnswer(e.currentTarget.value === '' ? [] : [{ valueInteger: e.currentTarget.valueAsNumber }])
           }
         />
       );
@@ -183,7 +183,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           defaultValue={defaultValue?.value}
           onChange={(e) => {
             const value = e.currentTarget.value;
-            onChangeAnswer([{ valueString: value === '' ? undefined : value }]);
+            onChangeAnswer(value === '' ? [] : [{ valueString: value }]);
           }}
         />
       );
@@ -197,7 +197,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           defaultValue={defaultValue?.value}
           onChange={(e) => {
             const value = e.currentTarget.value;
-            onChangeAnswer([{ valueString: value === '' ? undefined : value }]);
+            onChangeAnswer(value === '' ? [] : [{ valueString: value }]);
           }}
         />
       );
@@ -265,7 +265,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         );
       } else {
         formComponent = (
-          <QuestionnaireRadiobuttonInput
+          <QuestionnaireRadioButtonInput
             name={name}
             item={item}
             required={props.required ?? item.required}
@@ -297,7 +297,7 @@ interface QuestionnaireChoiceInputProps {
   readonly item: QuestionnaireItem;
   readonly initial: QuestionnaireItemInitial | undefined;
   readonly required: boolean | undefined;
-  readonly response: QuestionnaireResponseItem;
+  readonly response?: QuestionnaireResponseItem;
   readonly onChangeAnswer: (newResponseAnswer: QuestionnaireResponseItemAnswer[]) => void;
 }
 
@@ -446,7 +446,7 @@ function getOptionsFromValueSet(valueSetOptions: ValueSetExpansionContains[], na
   });
 }
 
-function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+function QuestionnaireRadioButtonInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, required, initial, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const initialValue = getItemInitialValue(initial);
@@ -538,7 +538,7 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
 
   // Get initial values from response
   const initialSelectedValues = item.answerValueSet
-    ? (response.answer?.map((a) => a.valueCoding) || []).filter((c): c is Coding => c !== undefined)
+    ? (response?.answer?.map((a) => a.valueCoding) || []).filter((c): c is Coding => c !== undefined)
     : getCurrentMultiSelectAnswer(response);
 
   const [selectedValues, setSelectedValues] = useState(initialSelectedValues);
@@ -646,13 +646,12 @@ function NoAnswerDisplay(): JSX.Element {
   return <TextInput disabled placeholder="No Answers Defined" />;
 }
 
-function getCurrentAnswer(response: QuestionnaireResponseItem, index: number = 0): TypedValue {
-  const results = response.answer;
-  return getItemAnswerOptionValue(results?.[index] ?? {});
+function getCurrentAnswer(response: QuestionnaireResponseItem | undefined, index: number = 0): TypedValue {
+  return getItemAnswerOptionValue(response?.answer?.[index] ?? {});
 }
 
-function getCurrentMultiSelectAnswer(response: QuestionnaireResponseItem): string[] {
-  const results = response.answer;
+function getCurrentMultiSelectAnswer(response: QuestionnaireResponseItem | undefined): string[] {
+  const results = response?.answer;
   if (!results) {
     return [];
   }

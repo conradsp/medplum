@@ -1,10 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import express from 'express';
 import gracefulShutdown from 'http-graceful-shutdown';
 import { initApp, shutdownApp } from './app';
 import { loadConfig } from './config/loader';
 import { globalLogger } from './logger';
 import { getServerVersion } from './util/version';
-
 export async function main(configName: string): Promise<void> {
   process.on('unhandledRejection', (err: any) => {
     globalLogger.error('Unhandled promise rejection', err);
@@ -54,7 +55,7 @@ export async function main(configName: string): Promise<void> {
   });
 }
 
-if (require.main === module) {
+if (import.meta.main) {
   main(process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json').catch((err) => {
     console.log(err);
     process.exit(1);

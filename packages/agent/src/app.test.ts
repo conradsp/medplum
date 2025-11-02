@@ -1,10 +1,14 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   AgentError,
   AgentMessage,
   AgentReloadConfigRequest,
   AgentTransmitRequest,
   AgentUpgradeRequest,
   AgentUpgradeResponse,
+} from '@medplum/core';
+import {
   ContentType,
   Hl7Message,
   LogLevel,
@@ -15,18 +19,20 @@ import {
   getReferenceString,
   sleep,
 } from '@medplum/core';
-import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import type { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
-import { Client, Server } from 'mock-socket';
-import child_process, { ChildProcess } from 'node:child_process';
+import type { Client } from 'mock-socket';
+import { Server } from 'mock-socket';
+import type { ChildProcess } from 'node:child_process';
+import child_process from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs, { existsSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import { resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
-import { AgentHl7Channel } from './hl7';
+import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
 import * as pidModule from './pid';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
 
@@ -156,7 +162,6 @@ describe('App', () => {
       if (event.type === 'open' && !state.shouldConnect) {
         return;
       }
-      // eslint-disable-next-line no-invalid-this
       originalDispatchEvent.call(this, event);
     });
 
@@ -370,9 +375,7 @@ describe('App', () => {
 
   test('Unknown endpoint protocol', async () => {
     const originalConsoleLog = console.log;
-    const originalConsoleError = console.error;
     console.log = jest.fn();
-    console.error = jest.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -427,7 +430,6 @@ describe('App', () => {
 
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unsupported endpoint type: foo:'));
     console.log = originalConsoleLog;
-    console.error = originalConsoleError;
   });
 
   test('Reload config', async () => {
@@ -436,6 +438,7 @@ describe('App', () => {
       mySocket: undefined as Client | undefined,
       gotAgentReloadResponse: false,
       gotAgentError: false,
+      agentError: undefined as AgentError | undefined,
     };
 
     function mockConnectionHandler(socket: Client): void {
@@ -460,6 +463,7 @@ describe('App', () => {
 
           case 'agent:error':
             state.gotAgentError = true;
+            state.agentError = command;
             break;
 
           default:
@@ -513,6 +517,14 @@ describe('App', () => {
       payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });
 
+    let bytestreamProdEndpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: 'tcp://0.0.0.0:9005?startChar=a&endChar=b',
+      connectionType: { code: ContentType.OCTET_STREAM },
+      payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
+    });
+
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
     const agent = await medplum.createResource<Agent>({
@@ -545,6 +557,11 @@ describe('App', () => {
           endpoint: createReference(hl7StagingEndpoint),
           targetReference: createReference(bot),
         },
+        {
+          name: 'bytestream-prod',
+          endpoint: createReference(bytestreamProdEndpoint),
+          targetReference: createReference(bot),
+        },
       ],
     });
 
@@ -563,7 +580,32 @@ describe('App', () => {
     expect(app.channels.has('dicom-test')).toStrictEqual(true);
     expect(app.channels.has('dicom-prod')).toStrictEqual(true);
     expect(app.channels.has('hl7-staging')).toStrictEqual(true);
-    expect(app.channels.size).toStrictEqual(5);
+    expect(app.channels.has('bytestream-prod')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(6);
+
+    const prodChannel = app.channels.get('hl7-prod') as AgentHl7Channel;
+    expect(prodChannel).toBeDefined();
+
+    expect(prodChannel.connections.size).toStrictEqual(0);
+
+    // Create a connection to the prod channel
+    const hl7Client = new Hl7Client({
+      host: 'localhost',
+      port: 9002,
+    });
+
+    await hl7Client.connect();
+    // Sleep to let connect event get emitted agent-side
+    await sleep(0);
+
+    expect(prodChannel.connections.size).toStrictEqual(1);
+    const hl7ProdConnection = prodChannel.connections.values().next().value as AgentHl7ChannelConnection;
+    expect(hl7ProdConnection).toBeDefined();
+    expect(hl7ProdConnection.hl7Connection.enhancedMode).toStrictEqual(false);
+
+    // Check that the socket is not closed
+    const hl7ProdConnectionSocket = hl7ProdConnection.hl7Connection.socket;
+    expect(hl7ProdConnectionSocket.closed).toStrictEqual(false);
 
     const stagingChannel = app.channels.get('hl7-staging') as AgentHl7Channel;
 
@@ -581,6 +623,27 @@ describe('App', () => {
       connectionType: { code: ContentType.DICOM },
       address: 'dicom://0.0.0.0:10003',
       payloadType: [{ coding: [{ code: ContentType.DICOM }] }],
+    });
+
+    // Update endpoint to have enhanced mode on, which should trigger a reload without making a new socket
+    const enhancedProdAddress = new URL(hl7ProdEndpoint.address);
+    enhancedProdAddress.searchParams.set('enhanced', 'true');
+
+    // Update the new address
+    await medplum.updateResource<Endpoint>({
+      ...hl7ProdEndpoint,
+      address: enhancedProdAddress.toString(),
+    });
+
+    // Test rebinding to port for byte stream channel
+    const oldPortBytestreamAddress = bytestreamProdEndpoint.address;
+    const changedPortEndpointAddress = new URL(bytestreamProdEndpoint.address);
+    changedPortEndpointAddress.port = '9010';
+
+    // Update the new address
+    bytestreamProdEndpoint = await medplum.updateResource<Endpoint>({
+      ...bytestreamProdEndpoint,
+      address: changedPortEndpointAddress.toString(),
     });
 
     // Update endpoint name
@@ -617,6 +680,12 @@ describe('App', () => {
           endpoint: createReference(hl7StagingEndpoint),
           targetReference: createReference(bot),
         },
+        // No changes
+        {
+          name: 'bytestream-prod',
+          endpoint: createReference(bytestreamProdEndpoint),
+          targetReference: createReference(bot),
+        },
       ],
     });
 
@@ -650,9 +719,29 @@ describe('App', () => {
     expect(app.channels.has('dicom-test')).toStrictEqual(true);
     expect(app.channels.has('dicom-prod')).toStrictEqual(true);
     expect(app.channels.has('hl7-dev')).toStrictEqual(true);
-    expect(app.channels.size).toStrictEqual(5);
+    expect(app.channels.has('bytestream-prod')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(6);
 
-    // Make sure old channel is closed
+    // Check that our prod connection for the prod channel is the same connection as before
+    expect(prodChannel.connections.size).toStrictEqual(1);
+    const hl7ProdConnectionAfter = prodChannel.connections.values().next().value as AgentHl7ChannelConnection;
+
+    expect(hl7ProdConnectionAfter).toBeDefined();
+
+    // Check that the socket is not closed and is the same socket
+    const hl7ProdConnectionSocketAfter = hl7ProdConnection.hl7Connection.socket;
+    expect(hl7ProdConnectionSocketAfter.closed).toStrictEqual(false);
+    expect(hl7ProdConnectionSocketAfter).toStrictEqual(hl7ProdConnectionSocket);
+
+    // But enhanced mode should be active on the existing connection
+    expect(hl7ProdConnectionAfter.hl7Connection.enhancedMode).toStrictEqual(true);
+
+    // Check that the byte stream channel was rebound
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining(`Address changed: ${oldPortBytestreamAddress} => ${bytestreamProdEndpoint.address}`)
+    );
+
+    // Make sure old staging channel is closed
     shouldThrow = false;
     timeout = setTimeout(() => {
       shouldThrow = true;
@@ -719,6 +808,12 @@ describe('App', () => {
           endpoint: createReference(hl7StagingEndpoint),
           targetReference: createReference(bot),
         },
+        // No changes
+        {
+          name: 'bytestream-prod',
+          endpoint: createReference(bytestreamProdEndpoint),
+          targetReference: createReference(bot),
+        },
         {
           name: 'hl7-conflicting',
           endpoint: createReference(hl7ConflictingEndpoint),
@@ -764,8 +859,112 @@ describe('App', () => {
     expect(app.channels.has('dicom-test')).toStrictEqual(true);
     expect(app.channels.has('dicom-prod')).toStrictEqual(true);
     expect(app.channels.has('hl7-dev')).toStrictEqual(true);
-    expect(app.channels.size).toStrictEqual(5);
+    expect(app.channels.has('bytestream-prod')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(6);
 
+    // Fix bad conflicting ports
+    const fixedHl7ConflictingUrl = new URL(hl7ConflictingEndpoint.address);
+    fixedHl7ConflictingUrl.port = '9006';
+    await medplum.updateResource<Endpoint>({ ...hl7ConflictingEndpoint, address: fixedHl7ConflictingUrl.toString() });
+
+    const fixedDicomConflictingUrl = new URL(dicomConflictingEndpoint.address);
+    fixedDicomConflictingUrl.port = '10006';
+    await medplum.updateResource<Endpoint>({
+      ...dicomConflictingEndpoint,
+      address: fixedDicomConflictingUrl.toString(),
+    });
+
+    // Make sure config works again
+
+    // Send reloadconfig message
+    state.mySocket.send(
+      JSON.stringify({
+        type: 'agent:reloadconfig:request',
+        callback: getReferenceString(agent) + '-' + randomUUID(),
+      } satisfies AgentReloadConfigRequest)
+    );
+
+    state.gotAgentReloadResponse = false;
+    state.gotAgentError = false;
+    state.agentError = undefined;
+    shouldThrow = false;
+    timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 3000);
+
+    while (!state.gotAgentReloadResponse) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    // We should get back `agent:error` message
+    expect(state.gotAgentReloadResponse).toStrictEqual(true);
+    expect(state.gotAgentError).toStrictEqual(false);
+
+    // Check channels have been updated
+    expect(app.channels.has('hl7-test')).toStrictEqual(true);
+    expect(app.channels.has('hl7-prod')).toStrictEqual(true);
+    expect(app.channels.has('dicom-test')).toStrictEqual(true);
+    expect(app.channels.has('dicom-prod')).toStrictEqual(true);
+    expect(app.channels.has('hl7-dev')).toStrictEqual(true);
+    expect(app.channels.has('hl7-conflicting')).toStrictEqual(true);
+    expect(app.channels.has('dicom-conflicting')).toStrictEqual(true);
+    expect(app.channels.has('bytestream-prod')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(8);
+
+    // Try removing endChar from bytestream-prod
+    const invalidBytestreamAddress = new URL(bytestreamProdEndpoint.address);
+    invalidBytestreamAddress.searchParams.delete('endChar');
+
+    await medplum.updateResource<Endpoint>({ ...bytestreamProdEndpoint, address: invalidBytestreamAddress.toString() });
+
+    // Send reloadconfig message
+    state.mySocket.send(
+      JSON.stringify({
+        type: 'agent:reloadconfig:request',
+        callback: getReferenceString(agent) + '-' + randomUUID(),
+      } satisfies AgentReloadConfigRequest)
+    );
+
+    state.gotAgentReloadResponse = false;
+    state.gotAgentError = false;
+    state.agentError = undefined;
+    shouldThrow = false;
+    timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 3000);
+
+    while (!state.gotAgentError) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    // We should get back `agent:error` message
+    expect(state.gotAgentReloadResponse).toStrictEqual(false);
+    expect(state.gotAgentError).toStrictEqual(true);
+    expect(state.agentError).toMatchObject<AgentError>({
+      type: 'agent:error',
+      body: expect.stringContaining('Failed to parse startChar and/or endChar query param(s) from'),
+    });
+
+    // Check channels are the same
+    expect(app.channels.has('hl7-test')).toStrictEqual(true);
+    expect(app.channels.has('hl7-prod')).toStrictEqual(true);
+    expect(app.channels.has('dicom-test')).toStrictEqual(true);
+    expect(app.channels.has('dicom-prod')).toStrictEqual(true);
+    expect(app.channels.has('hl7-dev')).toStrictEqual(true);
+    expect(app.channels.has('hl7-conflicting')).toStrictEqual(true);
+    expect(app.channels.has('dicom-conflicting')).toStrictEqual(true);
+    expect(app.channels.has('bytestream-prod')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(8);
+
+    await hl7Client.close();
     await app.stop();
     await new Promise<void>((resolve) => {
       mockServer.stop(resolve);
@@ -995,7 +1194,7 @@ describe('App', () => {
     }
     expect(isError).toStrictEqual(true);
 
-    hl7Client.close();
+    await hl7Client.close();
 
     // Wait for socket
     let shouldThrow = false;
@@ -1020,12 +1219,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server.start(57099);
-
-    // Wait for server to start listening
-    while (!hl7Server.server?.listening) {
-      await sleep(100);
-    }
+    await hl7Server.start(57099);
 
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
@@ -1139,7 +1333,7 @@ describe('App', () => {
     expect(response.segments).toHaveLength(2);
     expect(response.segments[1].name).toBe('MSA');
 
-    hl7Client.close();
+    await hl7Client.close();
 
     // Try to send agent:transmit:request -- should return valid response
     // Start an HL7 listener
@@ -1150,12 +1344,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server.start(57099);
-
-    // Wait for server to start listening
-    while (!hl7Server.server?.listening) {
-      await sleep(100);
-    }
+    await hl7Server.start(57099);
 
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
@@ -1314,7 +1503,7 @@ describe('App', () => {
     }
     expect(isError).toStrictEqual(true);
 
-    hl7Client.close();
+    await hl7Client.close();
 
     // This one should succeed
     hl7Client = new Hl7Client({
@@ -1336,7 +1525,7 @@ describe('App', () => {
     expect(response.segments).toHaveLength(2);
     expect(response.segments[1].name).toBe('MSA');
 
-    hl7Client.close();
+    await hl7Client.close();
 
     // Set agent status back to 'active'
     await medplum.updateResource<Endpoint>({
@@ -1407,7 +1596,7 @@ describe('App', () => {
     expect(response.segments).toHaveLength(2);
     expect(response.segments[1].name).toBe('MSA');
 
-    hl7Client.close();
+    await hl7Client.close();
 
     // This one should succeed
     hl7Client = new Hl7Client({
@@ -1429,7 +1618,7 @@ describe('App', () => {
     expect(response.segments).toHaveLength(2);
     expect(response.segments[1].name).toBe('MSA');
 
-    hl7Client.close();
+    await hl7Client.close();
 
     await app.stop();
     await new Promise<void>((resolve) => {
@@ -1532,7 +1721,7 @@ describe('App', () => {
     const testChannel = app.channels.get('test') as AgentHl7Channel;
     expect(testChannel.connections.size).toBe(1);
 
-    hl7Client.close();
+    await hl7Client.close();
 
     await app.stop();
 
@@ -2591,8 +2780,8 @@ describe('App', () => {
     test('Upgrading -- Manifest present on startup, version is wrong (Error)', async () => {
       const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
       const originalConsoleLog = console.log;
-      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
       console.log = jest.fn();
+      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2907,6 +3096,7 @@ describe('App', () => {
 
     const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
     const originalConsoleLog = console.log;
+    console.log = jest.fn();
     const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
     const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
     const fetchSpy = mockFetchForUpgrader();
@@ -2923,7 +3113,6 @@ describe('App', () => {
     const isAppRunningSpy = jest
       .spyOn(pidModule, 'isAppRunning')
       .mockImplementation((appName: string) => appName === 'medplum-upgrading-agent');
-    console.log = jest.fn();
 
     function mockConnectionHandler(socket: Client): void {
       state.mySocket = socket;
@@ -3020,6 +3209,7 @@ describe('App', () => {
 
     const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation();
     const originalConsoleLog = console.log;
+    console.log = jest.fn();
     const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
     const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
     const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
@@ -3039,7 +3229,6 @@ describe('App', () => {
       .mockImplementation(
         (appName: string) => appName === 'medplum-upgrading-agent' || appName === 'medplum-agent-upgrader'
       );
-    console.log = jest.fn();
 
     function mockConnectionHandler(socket: Client): void {
       state.mySocket = socket;
@@ -3150,6 +3339,125 @@ describe('App', () => {
     for (const spy of [unlinkSyncSpy, createPidFileSpy, platformSpy, fetchSpy, writeFileSyncSpy, isAppRunningSpy]) {
       spy.mockReset();
     }
+    console.log = originalConsoleLog;
+  });
+
+  test('App#stop should close all persistent HL7 clients', async () => {
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
+
+    const state = {
+      mySocket: undefined as Client | undefined,
+      transmitResponses: [] as AgentTransmitRequest[],
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:transmit:request') {
+          state.transmitResponses.push(command);
+        }
+      });
+    });
+
+    // Create an agent with keepAlive enabled
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      setting: [{ name: 'keepAlive', valueBoolean: true }],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    // Wait for WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Start multiple HL7 servers to create multiple persistent clients
+    const hl7Server1 = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        conn.send(message.buildAck());
+      });
+    });
+    await hl7Server1.start(57100);
+
+    const hl7Server2 = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        conn.send(message.buildAck());
+      });
+    });
+    await hl7Server2.start(57101);
+
+    // Wait for servers to start listening
+    while (!hl7Server1.server?.listening || !hl7Server2.server?.listening) {
+      await sleep(100);
+    }
+
+    // Send messages to create persistent clients
+    const hl7MessageBody =
+      'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+      'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
+      'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+      'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-';
+
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:request',
+          contentType: ContentType.HL7_V2,
+          body: hl7MessageBody,
+          remote: 'mllp://localhost:57100',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentTransmitRequest)
+      )
+    );
+
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:request',
+          contentType: ContentType.HL7_V2,
+          body: hl7MessageBody,
+          remote: 'mllp://localhost:57101',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentTransmitRequest)
+      )
+    );
+
+    while (app.hl7Clients.size !== 2) {
+      await sleep(100);
+    }
+
+    // Verify that persistent clients were created
+    expect(app.hl7Clients.size).toStrictEqual(2);
+
+    // Spy on client.close() to verify it's called
+    const closeSpies = Array.from(app.hl7Clients.values()).map((client) => jest.spyOn(client, 'close'));
+
+    // Stop the app
+    await app.stop();
+
+    expect(app.hl7Clients.size).toStrictEqual(0);
+
+    // Verify that close was called on all clients
+    for (const closeSpy of closeSpies) {
+      expect(closeSpy).toHaveBeenCalled();
+    }
+
+    // Clean up
+    await hl7Server1.stop();
+    await hl7Server2.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+
     console.log = originalConsoleLog;
   });
 });

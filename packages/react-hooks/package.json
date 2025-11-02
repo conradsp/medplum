@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react-hooks",
-  "version": "4.3.3",
+  "version": "4.5.2",
   "description": "Medplum React Hooks Library",
   "keywords": [
     "medplum",
@@ -33,6 +33,7 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
+  "type": "module",
   "exports": {
     "import": {
       "types": "./dist/esm/index.d.ts",
@@ -55,32 +56,31 @@
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "4.3.3",
-    "@medplum/definitions": "4.3.3",
-    "@medplum/fhirtypes": "4.3.3",
-    "@medplum/mock": "4.3.3",
-    "@testing-library/dom": "10.4.0",
-    "@testing-library/jest-dom": "6.6.3",
+    "@medplum/core": "4.5.2",
+    "@medplum/definitions": "4.5.2",
+    "@medplum/fhirtypes": "4.5.2",
+    "@medplum/mock": "4.5.2",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.0",
-    "@types/jest": "29.5.14",
-    "@types/node": "20.19.4",
-    "@types/react": "19.1.8",
-    "@types/react-dom": "19.1.6",
-    "jest": "29.7.0",
-    "jest-each": "29.7.0",
+    "@types/node": "22.18.13",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "dotenv": "17.2.3",
     "jest-websocket-mock": "2.5.0",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "typescript": "5.8.3"
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "typescript": "5.9.3"
   },
   "peerDependencies": {
-    "@medplum/core": "4.3.3",
-    "react": "^17.0.2 || ^18.0.0 || ^19.0.0"
+    "@medplum/core": "4.5.2",
+    "react": "^18.0.0 || ^19.0.0"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

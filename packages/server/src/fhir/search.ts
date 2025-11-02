@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { FhirFilterExpression, Filter, IncludeTarget, SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   badRequest,
@@ -6,16 +9,14 @@ import {
   evalFhirPathTyped,
   FhirFilterComparison,
   FhirFilterConnective,
-  FhirFilterExpression,
   FhirFilterNegation,
-  Filter,
   flatMapFilter,
   forbidden,
   formatSearchQuery,
   getDataType,
   getReferenceString,
   getSearchParameter,
-  IncludeTarget,
+  invalidSearchOperator,
   isResource,
   isUUID,
   OperationOutcomeError,
@@ -25,18 +26,15 @@ import {
   parseParameter,
   PropertyType,
   SearchParameterType,
-  SearchRequest,
   serverError,
-  SortRule,
   splitN,
   splitSearchOnComma,
   subsetResource,
   toPeriod,
   toTypedValue,
   validateResourceType,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   Bundle,
   BundleEntry,
   BundleLink,
@@ -46,12 +44,15 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
+import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
-import { Repository } from './repo';
+import type { Repository } from './repo';
 import { getFullUrl } from './response';
-import { ColumnSearchParameterImplementation, getSearchParameterImplementation } from './searchparameter';
+import type { ColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation } from './searchparameter';
+import type { Expression, Operator as SQL } from './sql';
 import {
   ArraySubquery,
   Column,
@@ -60,11 +61,9 @@ import {
   Conjunction,
   Disjunction,
   escapeLikeString,
-  Expression,
   Negation,
   periodToRangeString,
   SelectQuery,
-  Operator as SQL,
   SqlFunction,
   Union,
   UnionAllBuilder,
@@ -168,7 +167,7 @@ export async function searchByReferenceImpl<T extends Resource>(
           badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
         );
       }
-      const expr = buildReferenceEqualsCondition(builder.tableName, impl, referenceValues[0]);
+      const expr = buildReferenceEqualsCondition(builder.effectiveTableName, impl, referenceValues[0]);
       referenceConditions.push(expr);
       builder.whereExpr(expr);
 
@@ -186,7 +185,7 @@ export async function searchByReferenceImpl<T extends Resource>(
     }
     // Update each column with the current reference value literal
     for (const column of referenceColumns) {
-      column.columnName = `'${refValue}'`;
+      column.actualColumnName = `'${refValue}'`;
     }
     unionAllBuilder.add(searchQuery);
   }
@@ -309,9 +308,44 @@ async function getSearchEntries<T extends Resource>(
   searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
 ): Promise<{ entry: BundleEntry<WithId<T>>[]; rowCount: number; nextResource?: T }> {
-  const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-  const rowCount = rows.length;
-  const resources = rows.map((row) => JSON.parse(row.content)) as WithId<T>[];
+  const config = getConfig();
+  const originalLimit = builder.limit_;
+
+  if (config.fhirSearchMinLimit !== undefined && config.fhirSearchMinLimit > builder.limit_) {
+    builder.limit(config.fhirSearchMinLimit);
+  }
+
+  const client = repo.getDatabaseClient(DatabaseMode.READER);
+  let rows: any[];
+  try {
+    if (config.fhirSearchDiscourageSeqScan) {
+      // Despite the name, this doesn't truly remove the possibility of a sequential scan,
+      // just massively inflates the cost of a sequential scan to the planner.
+      await client.query('SET enable_seqscan = off');
+    }
+    rows = await builder.execute(client);
+  } finally {
+    if (config.fhirSearchDiscourageSeqScan) {
+      await client.query('RESET enable_seqscan');
+    }
+  }
+
+  const rowCount = Math.min(rows.length, originalLimit);
+  const resources = [];
+  for (let i = 0; i < rowCount; i++) {
+    const row = rows[i];
+    if (row.content) {
+      resources.push(JSON.parse(row.content));
+    } else {
+      // Handle missing content
+      // In the original implementation of deleted resources, the content was not stored in the database.
+      resources.push({
+        resourceType: searchRequest.resourceType,
+        id: row.id,
+        meta: { lastUpdated: row.lastUpdated?.toISOString() },
+      } as WithId<T>);
+    }
+  }
   let nextResource: T | undefined;
   if (resources.length > searchRequest.count) {
     nextResource = resources.pop();
@@ -388,12 +422,11 @@ function getBaseSelectQueryForResourceType(
       .column(new Column(resourceType, 'content'));
   }
   if (opts?.maxResourceVersion !== undefined) {
-    const col = new Column(resourceType, '__version');
-    builder.whereExpr(
-      new Disjunction([new Condition(col, '<=', opts.maxResourceVersion), new Condition(col, '=', null)])
-    );
+    builder.whereExpr(new Condition(new Column(resourceType, '__version'), '<=', opts.maxResourceVersion));
   }
-  repo.addDeletedFilter(builder);
+  if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
+    repo.addDeletedFilter(builder);
+  }
   repo.addSecurityFilters(builder, resourceType);
   addSearchFilters(repo, builder, resourceType, searchRequest);
   if (opts?.resourceTypeQueryCallback) {
@@ -1005,12 +1038,12 @@ function buildNormalSearchFilterExpression(
     case 'token':
     case 'uri':
       if (impl.type === SearchParameterType.BOOLEAN) {
-        return buildBooleanSearchFilter(table, impl, filter.operator, filter.value);
+        return buildBooleanSearchFilter(table, impl, filter);
       } else {
         return buildTokenSearchFilter(table, impl, filter.operator, splitSearchOnComma(filter.value));
       }
     case 'reference':
-      return buildReferenceSearchFilter(table, impl, filter.operator, splitSearchOnComma(filter.value));
+      return buildReferenceSearchFilter(table, impl, filter, splitSearchOnComma(filter.value));
     case 'date':
       return buildDateSearchFilter(table, impl, filter);
     case 'quantity':
@@ -1053,8 +1086,7 @@ function trySpecialSearchParameter(
           searchStrategy: 'column',
           parsedExpression: parseFhirPath('id'),
         },
-        filter.operator,
-        splitSearchOnComma(filter.value)
+        filter
       );
     case '_lastUpdated':
       return buildDateSearchFilter(
@@ -1067,16 +1099,44 @@ function trySpecialSearchParameter(
         },
         filter
       );
-    case '_compartment':
+    case '_deleted':
+      return buildBooleanSearchFilter(
+        table,
+        {
+          type: SearchParameterType.BOOLEAN,
+          columnName: 'deleted',
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('deleted'),
+        },
+        filter
+      );
     case '_project': {
-      if (filter.code === '_project') {
-        if (filter.operator === Operator.MISSING) {
-          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '=' : '!=', null);
-        } else if (filter.operator === Operator.PRESENT) {
-          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '!=' : '=', null);
+      if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
+        if (
+          (filter.operator === Operator.MISSING && filter.value === 'true') ||
+          (filter.operator === Operator.PRESENT && filter.value !== 'true')
+        ) {
+          // missing
+          return new Condition(new Column(table, 'projectId'), '=', systemResourceProjectId);
+        } else {
+          // present
+          return new Condition(new Column(table, 'projectId'), '!=', systemResourceProjectId);
         }
       }
 
+      return buildIdSearchFilter(
+        table,
+        {
+          columnName: 'projectId',
+          type: SearchParameterType.UUID,
+          array: false,
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('projectId'),
+        },
+        filter
+      );
+    }
+    case '_compartment': {
       return buildIdSearchFilter(
         table,
         {
@@ -1086,8 +1146,7 @@ function trySpecialSearchParameter(
           searchStrategy: 'column',
           parsedExpression: parseFhirPath('compartments'),
         },
-        filter.operator,
-        splitSearchOnComma(filter.value)
+        filter
       );
     }
     case '_filter':
@@ -1186,18 +1245,15 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
  * Adds an ID search filter as "WHERE" clause to the query builder.
  * @param table - The resource table name or alias.
  * @param impl - The search parameter implementation info.
- * @param operator - The search operator.
- * @param values - The string values to search against.
+ * @param filter - The search filter.
  * @returns The select query condition.
  */
-function buildIdSearchFilter(
-  table: string,
-  impl: ColumnSearchParameterImplementation,
-  operator: Operator,
-  values: string[]
-): Expression {
-  const column = new Column(table, impl.columnName);
+function buildIdSearchFilter(table: string, impl: ColumnSearchParameterImplementation, filter: Filter): Expression {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
 
+  const values = splitSearchOnComma(filter.value);
   for (let i = 0; i < values.length; i++) {
     if (values[i].includes('/')) {
       values[i] = values[i].split('/').pop() as string;
@@ -1207,8 +1263,8 @@ function buildIdSearchFilter(
     }
   }
 
-  const condition = buildEqualityCondition(impl, values, column);
-  if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
+  const condition = buildEqualityCondition(impl, values, new Column(table, impl.columnName));
+  if (filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT) {
     return new Negation(condition);
   }
   return condition;
@@ -1240,17 +1296,19 @@ const allowedBooleanValues = ['true', 'false'];
 function buildBooleanSearchFilter(
   table: string,
   impl: ColumnSearchParameterImplementation,
-  operator: Operator,
-  value: string
+  filter: Filter
 ): Expression {
-  if (!allowedBooleanValues.includes(value)) {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
+  if (!allowedBooleanValues.includes(filter.value)) {
     throw new OperationOutcomeError(badRequest(`Boolean search value must be 'true' or 'false'`));
   }
 
   return new Condition(
     new Column(table, impl.columnName),
-    operator === Operator.NOT_EQUALS || operator === Operator.NOT ? '!=' : '=',
-    value
+    filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT ? '!=' : '=',
+    filter.value
   );
 }
 
@@ -1258,16 +1316,19 @@ function buildBooleanSearchFilter(
  * Adds a reference search filter as "WHERE" clause to the query builder.
  * @param table - The table in which to search.
  * @param impl - The search parameter implementation info.
- * @param operator - The search operator.
+ * @param filter - The search filter.
  * @param values - The string values to search against or a Column
  * @returns The select query condition.
  */
 function buildReferenceSearchFilter(
   table: string,
   impl: ColumnSearchParameterImplementation,
-  operator: Operator,
+  filter: Filter,
   values: string[] | Column
 ): Expression {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
   const column = new Column(table, impl.columnName);
   if (Array.isArray(values)) {
     values = values.map((v) =>
@@ -1284,7 +1345,9 @@ function buildReferenceSearchFilter(
   } else {
     condition = new Condition(column, 'IN', values);
   }
-  return operator === Operator.NOT || operator === Operator.NOT_EQUALS ? new Negation(condition) : condition;
+  return filter.operator === Operator.NOT || filter.operator === Operator.NOT_EQUALS
+    ? new Negation(condition)
+    : condition;
 }
 
 function buildReferenceEqualsCondition(
@@ -1306,9 +1369,10 @@ function buildReferenceEqualsCondition(
  * From the dateTime regex on {@link https://hl7.org/fhir/R4/datatypes.html#primitive}, but with:
  * - year and month required
  * - seconds optional when minutes specified for backwards compatibility, e.g. 1985-11-30T05:05Z
+ * - A space is allowed instead of a T as the date/time separator
  */
 const supportedDateRegex =
-  /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3])(:[0-5]\d(:([0-5]\d|60))?(\.\d{1,9})?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?$/;
+  /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|3[0-1])([T ]([01]\d|2[0-3])(:[0-5]\d(:([0-5]\d|60))?(\.\d{1,9})?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?$/;
 
 /**
  * Perform validation on date or dateTime values to ensure compatibility with Postgres timestamp parsing.
@@ -1338,6 +1402,9 @@ export function buildDateSearchFilter(
   impl: ColumnSearchParameterImplementation,
   filter: Filter
 ): Expression {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
   validateDateValue(filter.value);
 
   if (table === 'MeasureReport' && impl.columnName === 'period') {
@@ -1455,12 +1522,12 @@ function addOrderByClause(
 
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy === 'token-column') {
-    addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
+    addTokenColumnsOrderBy(builder, impl, sortRule);
   } else if (impl.searchStrategy === 'lookup-table') {
-    impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
+    impl.lookupTable.addOrderBy(builder, impl, resourceType, sortRule);
   } else {
     impl satisfies ColumnSearchParameterImplementation;
-    builder.orderBy(impl.columnName, !!sortRule.descending);
+    builder.orderBy(impl.columnName, sortRule.descending);
   }
 }
 
@@ -1557,11 +1624,11 @@ function buildChainedSearchUsingReferenceTable(
   let innerQuery: SelectQuery;
   if (link.implementation.type === SearchParameterType.CANONICAL) {
     innerQuery = new SelectQuery(currentTable).whereExpr(
-      getCanonicalJoinCondition(selectQuery.tableName, link, currentTable)
+      getCanonicalJoinCondition(selectQuery.effectiveTableName, link, currentTable)
     );
   } else {
     innerQuery = new SelectQuery(currentTable).whereExpr(
-      lookupTableJoinCondition(selectQuery.tableName, link, currentTable)
+      lookupTableJoinCondition(selectQuery.effectiveTableName, link, currentTable)
     );
     currentTable = linkLiteralReference(innerQuery, currentTable, link);
   }
@@ -1699,11 +1766,15 @@ function parseChainedParameter(resourceType: string, searchFilter: Filter): Chai
       currentResourceType = link.targetType;
     } else if (i === parts.length - 1) {
       const [code, modifier] = splitN(part, ':', 2);
-      const searchParam = getSearchParameter(currentResourceType, code);
-      if (!searchParam) {
-        throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
+      if (code === '_filter') {
+        filter = { code: '_filter', operator: Operator.EQUALS, value: searchFilter.value };
+      } else {
+        const searchParam = getSearchParameter(currentResourceType, code);
+        if (!searchParam) {
+          throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
+        }
+        filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
       }
-      filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
     } else {
       const link = parseChainLink(part, currentResourceType);
       chain.push(link);

@@ -1,4 +1,6 @@
-import { TypeName } from './types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TypeName } from './types';
 
 export const ExternalSecretSystems = {
   aws_ssm_parameter_store: 'aws_ssm_parameter_store',
@@ -50,6 +52,7 @@ export interface MedplumSourceInfraConfig {
   rdsReaderInstanceType?: ValueOrExternalSecret<string>;
   rdsProxyEnabled?: ValueOrExternalSecret<boolean>;
   rdsClusterParameters?: StringMap;
+  rdsAutoMinorVersionUpgrade?: ValueOrExternalSecret<boolean>;
   cacheNodeType?: ValueOrExternalSecret<string>;
   cacheSecurityGroupId?: ValueOrExternalSecret<string>;
   desiredServerCount: ValueOrExternalSecret<number>;
@@ -77,7 +80,8 @@ export interface MedplumSourceInfraConfig {
       [key: string]: ValueOrExternalSecret<string>;
     };
   }[];
-  containerInsights?: ValueOrExternalSecret<boolean>;
+  containerRegistryCredentialsSecretArn?: ValueOrExternalSecret<string>;
+  containerInsightsV2?: ValueOrExternalSecret<'enabled' | 'disabled' | 'enhanced'>;
   cloudTrailAlarms?: {
     logGroupName: ValueOrExternalSecret<string>;
     logGroupCreate?: ValueOrExternalSecret<boolean>;
@@ -93,8 +97,27 @@ export interface MedplumSourceInfraConfig {
   };
   environment?: StringMap;
 
-  rdsIdsMajorVersionSuffix?: boolean;
-  rdsPersistentParameterGroups?: boolean;
+  rdsIdsMajorVersionSuffix?: ValueOrExternalSecret<boolean>;
+  rdsPersistentParameterGroups?: ValueOrExternalSecret<boolean>;
+
+  fireLens?: {
+    enabled: true;
+    logDriverConfig?: {
+      options?: {
+        [key: string]: ValueOrExternalSecret<string>;
+      };
+      secretOptions?: {
+        [key: string]: ValueOrExternalSecret<string>;
+      };
+    };
+    logRouterConfig: {
+      type: 'fluentbit' | 'fluentd';
+      options?: Record<string, unknown>;
+    };
+    environment?: {
+      [key: string]: ValueOrExternalSecret<string>;
+    };
+  };
 }
 
 export interface MedplumInfraConfig {
@@ -129,6 +152,7 @@ export interface MedplumInfraConfig {
   rdsInstanceType: string;
   rdsInstanceVersion?: string;
   rdsClusterParameters?: StringMap;
+  rdsAutoMinorVersionUpgrade?: boolean;
   rdsSecretsArn?: string;
   rdsReaderInstanceType?: string;
   rdsProxyEnabled?: boolean;
@@ -159,7 +183,8 @@ export interface MedplumInfraConfig {
       [key: string]: string;
     };
   }[];
-  containerInsights?: boolean;
+  containerRegistryCredentialsSecretArn?: string;
+  containerInsightsV2?: 'enabled' | 'disabled' | 'enhanced';
   cloudTrailAlarms?: {
     logGroupName: string;
     logGroupCreate?: boolean;
@@ -177,4 +202,23 @@ export interface MedplumInfraConfig {
 
   rdsIdsMajorVersionSuffix?: boolean;
   rdsPersistentParameterGroups?: boolean;
+
+  fireLens?: {
+    enabled: true;
+    logDriverConfig?: {
+      options?: {
+        [key: string]: string;
+      };
+      secretOptions?: {
+        [key: string]: string;
+      };
+    };
+    logRouterConfig: {
+      type: 'fluentbit' | 'fluentd';
+      options?: Record<string, unknown>;
+    };
+    environment?: {
+      [key: string]: string;
+    };
+  };
 }

@@ -1,5 +1,8 @@
-import { BotEvent, MedplumClient, OperationOutcomeError } from '@medplum/core';
-import { Patient, OperationOutcome, Identifier } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import { OperationOutcomeError } from '@medplum/core';
+import type { Identifier, OperationOutcome, Patient } from '@medplum/fhirtypes';
 
 /**
  * HAPI FHIR Server Sync Bot with External EHR Integration
@@ -95,7 +98,7 @@ async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<Pat
     }
 
     // Parse the response to get the HAPI server's patient ID
-    const responseData = await response.json();
+    const responseData = (await response.json()) as Patient;
     const hapiPatientId = responseData.id;
 
     // For PUT operations, enrich the patient with HAPI server ID

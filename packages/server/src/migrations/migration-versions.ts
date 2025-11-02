@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import * as postDeployMigrations from './data';
 import * as preDeployMigrations from './schema';
 
@@ -73,5 +75,5 @@ export function getPostDeployMigrationVersions(): number[] {
 
 export function getLatestPostDeployMigrationVersion(): number {
   const versions = getPostDeployMigrationVersions();
-  return versions[versions.length - 1];
+  return versions.at(-1) as number;
 }

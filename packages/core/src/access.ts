@@ -1,4 +1,6 @@
-import { AccessPolicy, AccessPolicyResource, Resource, ResourceType } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AccessPolicy, AccessPolicyResource, Resource, ResourceType } from '@medplum/fhirtypes';
 import { matchesSearchRequest } from './search/match';
 import { parseSearchRequest } from './search/search';
 
@@ -16,13 +18,7 @@ export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Log
  * Project admin resource types are special resources that are only
  * accessible to project administrators.
  */
-export const projectAdminResourceTypes = [
-  'PasswordChangeRequest',
-  'UserSecurityRequest',
-  'Project',
-  'ProjectMembership',
-  'User',
-];
+export const projectAdminResourceTypes = ['UserSecurityRequest', 'Project', 'ProjectMembership', 'User'];
 
 /**
  * Interactions with a resource that can be controlled via an access policy.

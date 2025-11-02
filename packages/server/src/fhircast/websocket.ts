@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { generateId } from '@medplum/core';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { IncomingMessage } from 'node:http';
+import type { IncomingMessage } from 'node:http';
 import os from 'node:os';
-import ws from 'ws';
+import type { RawData, WebSocket } from 'ws';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { setGauge } from '../otel/otel';
@@ -12,7 +14,7 @@ const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
 let heartbeatHandler: (() => void) | undefined;
 
-const websocketMap = new Map<ws.WebSocket, string>();
+const websocketMap = new Map<WebSocket, string>();
 const topicRefCountMap = new Map<string, number>();
 
 export function initFhircastHeartbeat(): void {
@@ -56,11 +58,11 @@ export function stopFhircastHeartbeat(): void {
 }
 
 /**
- * Handles a new WebSocket connection to the FHIRCast hub.
+ * Handles a new WebSocket connection to the FHIRcast hub.
  * @param socket - The WebSocket connection.
  * @param request - The HTTP request.
  */
-export async function handleFhircastConnection(socket: ws.WebSocket, request: IncomingMessage): Promise<void> {
+export async function handleFhircastConnection(socket: WebSocket, request: IncomingMessage): Promise<void> {
   const topicEndpoint = (request.url as string).split('/').filter(Boolean)[2];
   const endpointTopicKey = `medplum:fhircast:endpoint:${topicEndpoint}:topic`;
 
@@ -102,7 +104,7 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
 
   socket.on(
     'message',
-    AsyncLocalStorage.bind(async (data: ws.RawData) => {
+    AsyncLocalStorage.bind(async (data: RawData) => {
       const message = JSON.parse((data as Buffer).toString('utf8'));
       globalLogger.debug('message', message);
     })

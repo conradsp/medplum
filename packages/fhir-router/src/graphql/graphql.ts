@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Logger } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -6,48 +9,50 @@ import {
   DEFAULT_SEARCH_COUNT,
   forbidden,
   getResourceTypes,
-  Logger,
   LRUCache,
   normalizeOperationOutcome,
   OperationOutcomeError,
 } from '@medplum/core';
-import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Bundle, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import DataLoader from 'dataloader';
-import {
+import type {
   ArgumentNode,
   ASTNode,
   ASTVisitor,
   DocumentNode,
-  execute,
   ExecutionResult,
   FieldNode,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
+  GraphQLOutputType,
+  GraphQLResolveInfo,
+  OperationDefinitionNode,
+  ValidationContext,
+} from 'graphql';
+import {
+  execute,
   GraphQLFloat,
   GraphQLID,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
-  GraphQLOutputType,
-  GraphQLResolveInfo,
   GraphQLSchema,
   GraphQLString,
   Kind,
-  OperationDefinitionNode,
   parse,
   specifiedRules,
   validate,
-  ValidationContext,
 } from 'graphql';
-import { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
-import { FhirRepository, RepositoryMode } from '../repo';
-import { getGraphQLInputType } from './input-types';
+import type { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
+import type { FhirRepository } from '../repo';
+import { RepositoryMode } from '../repo';
+import { getGraphQLInputType, getPatchOperationInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
+import type { GraphQLContext } from './utils';
 import {
   applyMaxCount,
   buildSearchArgs,
-  GraphQLContext,
   invalidRequest,
   isFieldRequested,
   parseSearchArgs,
@@ -66,11 +71,16 @@ const introspectionResults = new LRUCache<ExecutionResult>();
  * This should be initialized at server startup.
  */
 let rootSchema: GraphQLSchema | undefined;
+
 interface ConnectionResponse {
   count?: number;
   offset?: number;
   pageSize?: number;
   edges?: ConnectionEdge[];
+  first?: string;
+  previous?: string;
+  next?: string;
+  last?: string;
 }
 
 interface ConnectionEdge {
@@ -229,6 +239,12 @@ function buildRootSchema(): GraphQLSchema {
       resolve: resolveByUpdate,
     };
 
+    mutationFields[resourceType + 'Patch'] = {
+      type: graphQLOutputType,
+      args: buildPatchArgs(resourceType),
+      resolve: resolveByPatch,
+    };
+
     mutationFields[resourceType + 'Delete'] = {
       type: graphQLOutputType,
       args: {
@@ -340,6 +356,7 @@ async function resolveByConnectionApi(
       score: e.search?.score,
       resource: e.resource as Resource,
     })),
+    next: getNextCursor(bundle),
   };
 }
 
@@ -445,6 +462,33 @@ async function resolveByDelete(
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 'Delete'.length) as ResourceType;
   await ctx.repo.deleteResource(resourceType, args.id);
+}
+
+/**
+ * GraphQL resolver function for patch requests.
+ * The field name should end with "Patch" (i.e., "PatientPatch" for patching a Patient).
+ * The args should include the id and patch array for the specified resource type.
+ * @param _source - The source/root object. In the case of patch, this is typically not used and is thus ignored.
+ * @param args - The GraphQL arguments, containing the id and patch array.
+ * @param ctx - The GraphQL context. This includes the repository where resources are stored.
+ * @param info - The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
+ * @returns A Promise that resolves to the patched resource, or undefined if the resource could not be found or updated.
+ */
+async function resolveByPatch(
+  _source: any,
+  args: Record<string, any>,
+  ctx: GraphQLContext,
+  info: GraphQLResolveInfo
+): Promise<any> {
+  const fieldName = info.fieldName;
+  const resourceType = fieldName.substring(0, fieldName.length - 'Patch'.length) as ResourceType;
+  const resourceId = args.id;
+  const patch = args.patch;
+  if (!resourceType || !resourceId || !Array.isArray(patch)) {
+    throw new OperationOutcomeError(badRequest('Invalid patch arguments'));
+  }
+  // Patch operation expects an array of operations
+  return ctx.repo.patchResource(resourceType, resourceId, patch);
 }
 
 const DEFAULT_MAX_DEPTH = 12;
@@ -659,4 +703,25 @@ function isSearchField(node: FieldNode): boolean {
 
 function isLinkedResource(node: FieldNode): boolean {
   return node.name.value === 'resource';
+}
+
+function getNextCursor(bundle: Bundle): string | undefined {
+  const link = bundle.link?.find((l) => l.relation === 'next')?.url;
+  if (!link) {
+    return undefined;
+  }
+  return new URL(link).searchParams.get('_cursor') || undefined;
+}
+
+function buildPatchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
+  return {
+    id: {
+      type: new GraphQLNonNull(GraphQLID),
+      description: resourceType + ' ID',
+    },
+    patch: {
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(getPatchOperationInputType()))),
+      description: 'Array of patch operations',
+    },
+  };
 }

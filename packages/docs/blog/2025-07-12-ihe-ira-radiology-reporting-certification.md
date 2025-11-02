@@ -1,6 +1,6 @@
 ---
 slug: ihe-ira-radiology-reporting
-title: "Medplum Certfies IRA"
+title: 'Medplum Certifies IRA'
 authors: ThatOneBro
 tags: [fhir-datastore, integration, auth, community, ai]
 ---
@@ -10,6 +10,8 @@ tags: [fhir-datastore, integration, auth, community, ai]
 Medplum has become one of the first platforms to achieve certification for the **Hub role** in the Integrated Reporting Applications (IRA) IHE Profile, marking a milestone in radiology workflow interoperability. This certification positions Medplum as a central orchestrator for real-time synchronization between radiology applications, addressing one of healthcare's most persistent challenges: fragmented diagnostic workflows.
 
 The IRA profile, published in October 2023 by Integrating the Healthcare Enterprise (IHE), represents a **transformative approach** to radiology interoperability. Built on [FHIRcast](/docs/fhircast) 3.0.0 and FHIR R5 standards, IRA enables different applications—from PACS systems to AI tools—to share context and content seamlessly during diagnostic reporting. For Medplum, certification as a FHIRcast Hub means our platform can now coordinate complex radiology workflows where multiple applications must work together in harmony.
+
+<!-- truncate -->
 
 ## The Radiology Workflow Challenge IRA Solves
 
@@ -24,12 +26,12 @@ sequenceDiagram
     participant PACS as PACS System
     participant Hub as Medplum Hub
     participant Report as Reporting App
-    
+
     PACS->>Hub: Creates measurement on image
     Hub->>Hub: Processes DiagnosticReport-update event
     Hub->>Report: Sends measurement data
     Report->>Report: Displays measurement in report template
-    
+
     Note over PACS,Report: Real-time synchronization ensures measurement appears instantly in reporting application
 ```
 
@@ -45,14 +47,14 @@ graph TD
     B[Reporting App] --> H
     C[AI Tools] --> H
     D[Measurement Tools] --> H
-    
+
     H --> A
-    H --> B  
+    H --> B
     H --> C
     H --> D
-    
+
     H -.-> E1[DiagnosticReport-open, update, select, close]
-    
+
     style H fill:#e1f5fe
     style E1 fill:#f3e5f5
 ```
@@ -97,7 +99,7 @@ For radiology departments struggling with fragmented workflows and disconnected 
 
 As healthcare continues its digital transformation, **standards like IRA** and platforms like Medplum that embrace them will prove essential. The future of radiology lies not in monolithic, single-vendor solutions, but in ecosystems of specialized, interoperable applications working in concert. With IRA Hub certification, Medplum has positioned itself at the center of this transformation, ready to enable the next generation of radiology workflows.
 
-<img src="https://api.accredible.com/v1/frontend/credential_website_embed_image/certificate/138988291" alt="IRA Certification" style={{borderRadius: '0%'}} />
+![IRA Certification](/img/blog/ihe-ira.png)
 
 ## Related Reading
 

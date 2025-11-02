@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cdk",
-  "version": "4.3.3",
+  "version": "4.5.2",
   "description": "Medplum CDK Infra as Code",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -13,6 +13,7 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "files": [
     "dist"
   ],
@@ -21,15 +22,16 @@
     "cdk": "cdk",
     "clean": "rimraf dist cdk.out",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@aws-sdk/types": "3.840.0",
-    "@medplum/core": "4.3.3",
-    "aws-cdk-lib": "2.204.0",
-    "cdk": "2.1020.2",
-    "cdk-nag": "2.36.34",
-    "cdk-serverless-clamscan": "2.11.71",
+    "@aws-sdk/types": "3.922.0",
+    "@medplum/core": "4.5.2",
+    "aws-cdk-lib": "2.221.1",
+    "cdk": "2.1031.1",
+    "cdk-nag": "2.37.55",
+    "cdk-serverless-clamscan": "2.13.46",
     "constructs": "10.4.2",
     "object-hash": "3.0.0"
   },
@@ -37,6 +39,6 @@
     "@types/object-hash": "3.0.6"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

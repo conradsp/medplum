@@ -1,5 +1,8 @@
-import { getReferenceString, Operator, ProfileResource, WithId } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
+import { getReferenceString, Operator } from '@medplum/core';
+import type {
   Login,
   Project,
   ProjectMembership,
@@ -9,10 +12,11 @@ import {
   UserConfigurationMenu,
 } from '@medplum/fhirtypes';
 import Bowser from 'bowser';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 
 interface UserSession {
@@ -27,6 +31,7 @@ interface UserSession {
 interface UserSecurity {
   mfaEnrolled: boolean;
   sessions: UserSession[];
+  memberships: Partial<ProjectMembership>[];
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
@@ -43,9 +48,33 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   if (membership.user?.reference?.startsWith('User/')) {
     user = await systemRepo.readReference<User>(membership.user as Reference<User>);
     const sessions = await getSessions(systemRepo, user);
+    const memberships = await systemRepo.searchResources<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [
+        {
+          code: 'user',
+          operator: Operator.EQUALS,
+          value: getReferenceString(user),
+        },
+        {
+          code: 'project',
+          operator: Operator.EQUALS,
+          value: getReferenceString(project),
+        },
+      ],
+    });
     security = {
       mfaEnrolled: !!user.mfaEnrolled,
       sessions,
+      memberships: memberships
+        .filter((m) => m.active !== false)
+        .map((membership) => ({
+          resourceType: 'ProjectMembership',
+          id: membership.id,
+          identifier: membership.identifier,
+          profile: membership.profile,
+          admin: membership.admin,
+        })),
     };
   }
 
@@ -133,6 +162,7 @@ export function getUserConfigurationMenu(project: Project, membership: ProjectMe
         { name: 'Projects', target: '/Project' },
         { name: 'Super Config', target: '/admin/super' },
         { name: 'Super AsyncJob', target: '/admin/super/asyncjob' },
+        { name: 'Super DB', target: '/admin/super/db' },
       ],
     });
   }

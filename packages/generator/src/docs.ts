@@ -1,15 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import fs, { writeFileSync } from 'fs';
-import { DOMWindow, JSDOM } from 'jsdom';
+import type { DOMWindow } from 'jsdom';
+import { JSDOM } from 'jsdom';
 import * as mkdirp from 'mkdirp';
 import fetch from 'node-fetch';
 import * as path from 'path';
 import { resolve } from 'path/posix';
 import * as unzipper from 'unzipper';
 
-import {
+import type {
   DocumentationLocation,
   PropertyDocInfo,
   PropertyTypeDocInfo,
@@ -116,7 +119,7 @@ function buildDocsDefinition(
   const elements = resourceDefinition.snapshot?.element || [];
   for (const element of elements) {
     const parts = element.path?.split('.') || [];
-    const name = parts[parts.length - 1];
+    const name = parts.at(-1) as string;
     const { path, min, max, short, definition, comment } = element;
     result.properties.push({
       name,

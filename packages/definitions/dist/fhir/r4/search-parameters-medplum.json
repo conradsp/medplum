@@ -539,24 +539,6 @@
       }
     },
     {
-      "fullUrl": "https://medplum.com/fhir/SearchParameter/PasswordChangeRequest-user",
-      "resource": {
-        "resourceType": "SearchParameter",
-        "id": "PasswordChangeRequest-user",
-        "url": "https://medplum.com/fhir/SearchParameter/PasswordChangeRequest-user",
-        "version": "4.0.1",
-        "name": "user",
-        "status": "draft",
-        "publisher": "Medplum",
-        "description": "The user for the password change request.",
-        "code": "user",
-        "base": ["PasswordChangeRequest"],
-        "type": "reference",
-        "expression": "PasswordChangeRequest.user",
-        "target": ["User"]
-      }
-    },
-    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/UserSecurityRequest-user",
       "resource": {
         "resourceType": "SearchParameter",
@@ -1649,6 +1631,23 @@
           "VerificationResult",
           "VisionPrescription"
         ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ServiceRequest-reason-code",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ServiceRequest-reason-code",
+        "url": "https://medplum.com/fhir/SearchParameter/ServiceRequest-reason-code",
+        "version": "4.0.1",
+        "name": "reason-code",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Coded value representing the reason for this ServiceRequest.  NOTE: The underlying field will change in FHIR R6 to ServiceRequest.reason.concept",
+        "code": "reason-code",
+        "base": ["ServiceRequest"],
+        "type": "token",
+        "expression": "ServiceRequest.reasonCode"
       }
     }
   ]

@@ -1,12 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { splitN } from '@medplum/core';
+import { randomUUID } from 'crypto';
 import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
-import { join, resolve } from 'path';
+import { join } from 'path';
 import { loadAwsConfig } from '../cloud/aws/config';
 import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';
-import { MedplumServerConfig } from './types';
-import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig, ServerConfig } from './utils';
+import type { MedplumServerConfig } from './types';
+import type { ServerConfig } from './utils';
+import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
 
 let cachedConfig: ServerConfig | undefined = undefined;
 
@@ -84,6 +88,8 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.emailProvider = 'none';
   config.logLevel = 'error';
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
+  config.defaultSuperAdminClientId = randomUUID();
+  config.defaultSuperAdminClientSecret = randomUUID();
   return config;
 }
 
@@ -144,5 +150,5 @@ function loadEnvConfig(): MedplumServerConfig {
  * @returns The configuration.
  */
 async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
-  return JSON.parse(readFileSync(resolve(__dirname, '../../', path), { encoding: 'utf8' }));
+  return JSON.parse(readFileSync(path, { encoding: 'utf8' }));
 }

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import readline from 'node:readline';
 
 let terminal: readline.Interface;
@@ -49,7 +51,7 @@ export function ask(text: string, defaultValue: string | number = ''): Promise<s
  */
 export async function choose(text: string, options: (string | number)[], defaultValue = ''): Promise<string> {
   const str = text + ' [' + options.map((o) => (o === defaultValue ? '(' + o + ')' : o)).join('|') + ']';
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
     const answer = (await ask(str)) || defaultValue;
     if (options.includes(answer)) {

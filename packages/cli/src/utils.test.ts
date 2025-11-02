@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
 import { Option } from 'commander';
-import { Stats } from 'node:fs';
+import type { Stats } from 'node:fs';
 import { Writable } from 'node:stream';
-import tar, { Unpack } from 'tar';
+import * as tar from 'tar';
 import { getCodeContentType, MedplumCommand, safeTarExtractor } from './utils';
 
 jest.mock('tar', () => ({
@@ -17,7 +19,7 @@ describe('CLI utils', () => {
           options.filter?.(chunk.toString(), { size: 1 } as Stats);
           callback();
         },
-      }) as unknown as Unpack;
+      }) as unknown as tar.Unpack;
       return writable;
     });
 
@@ -37,7 +39,7 @@ describe('CLI utils', () => {
           options.filter?.(chunk.toString(), { size: 1024 * 1024 } as Stats);
           callback();
         },
-      }) as unknown as Unpack;
+      }) as unknown as tar.Unpack;
       return writable;
     });
 

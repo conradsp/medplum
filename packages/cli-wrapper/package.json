@@ -1,6 +1,6 @@
 {
   "name": "medplum",
-  "version": "4.3.3",
+  "version": "4.5.2",
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
@@ -28,6 +28,7 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "bin": {
     "medplum": "./dist/cjs/index.cjs"
   },
@@ -38,13 +39,14 @@
     "build": "npm run clean && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
     "lint": "eslint .",
-    "medplum": "ts-node src/index.ts"
+    "lint:fix": "eslint . --fix",
+    "medplum": "tsx src/index.ts"
   },
   "dependencies": {
-    "@medplum/cli": "4.3.3",
-    "@medplum/core": "4.3.3"
+    "@medplum/cli": "4.5.2",
+    "@medplum/core": "4.5.2"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

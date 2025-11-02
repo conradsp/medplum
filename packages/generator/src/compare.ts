@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { evalFhirPathTyped, toTypedValue } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
+import type { Resource } from '@medplum/fhirtypes';
 import { XMLParser } from 'fast-xml-parser';
 import fhirpath from 'fhirpath';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -150,7 +152,7 @@ function processTest(test: any): void {
 
   let outputStr;
   let anyOutput = false;
-  if (test.output && test.output['#text'] === true) {
+  if (test.output?.['#text'] === true) {
     outputStr = JSON.stringify([true]);
   } else if (test.output && Array.isArray(test.output)) {
     outputStr = JSON.stringify(test.output.map((o: any) => o['#text']));

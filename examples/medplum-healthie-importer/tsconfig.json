@@ -1,12 +1,11 @@
 {
   "compilerOptions": {
-    "rootDir": "src",
     "outDir": "dist",
     "lib": ["esnext"],
     "types": ["vitest/globals"],
-    "target": "es2018",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "strict": true,
     "sourceMap": true,
     "declaration": true,
@@ -29,6 +28,5 @@
     "noEmit": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
