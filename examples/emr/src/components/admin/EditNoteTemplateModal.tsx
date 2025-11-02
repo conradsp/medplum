@@ -1,10 +1,10 @@
 import { Modal, TextInput, Button, Group, Stack, Textarea, Select } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
 import { Questionnaire, QuestionnaireItem } from '@medplum/fhirtypes';
 import { useMedplum, QuestionnaireForm } from '@medplum/react';
 import { IconCheck } from '@tabler/icons-react';
 import { JSX, useState, useEffect } from 'react';
-
+import { useTranslation } from 'react-i18next';
+import { showSuccess, handleError } from '../../utils/errorHandling';
 interface EditNoteTemplateModalProps {
   opened: boolean;
   onClose: () => void;
@@ -12,6 +12,7 @@ interface EditNoteTemplateModalProps {
 }
 
 export function EditNoteTemplateModal({ opened, onClose, template }: EditNoteTemplateModalProps): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -91,18 +92,10 @@ export function EditNoteTemplateModal({ opened, onClose, template }: EditNoteTem
         await medplum.createResource(questionnaire);
       }
 
-      notifications.show({
-        title: 'Success',
-        message: 'Template saved successfully!',
-        color: 'green',
-      });
+      showSuccess(t('admin.noteTemplates.saveSuccess'));
       onClose();
     } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to save template. Please try again.',
-        color: 'red',
-      });
+      handleError(error, t('message.error.save'));
     } finally {
       setLoading(false);
     }
@@ -112,35 +105,35 @@ export function EditNoteTemplateModal({ opened, onClose, template }: EditNoteTem
     <Modal
       opened={opened}
       onClose={onClose}
-      title={template ? 'Edit Note Template' : 'Create Note Template'}
+      title={template ? t('admin.noteTemplates.edit') : t('admin.noteTemplates.create')}
       size="lg"
       centered
     >
       <form onSubmit={handleSubmit}>
         <Stack>
           <TextInput
-            label="Template Name"
-            placeholder="SOAP Note"
+            label={t('admin.noteTemplates.name')}
+            placeholder={t('admin.noteTemplates.namePlaceholder')}
             required
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.currentTarget.value })}
           />
 
           <Textarea
-            label="Description"
-            placeholder="Subjective, Objective, Assessment, and Plan documentation"
+            label={t('common.description')}
+            placeholder={t('admin.noteTemplates.descriptionPlaceholder')}
             rows={2}
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.currentTarget.value })}
           />
 
           <Select
-            label="Status"
+            label={t('admin.noteTemplates.status')}
             required
             data={[
-              { value: 'active', label: 'Active' },
-              { value: 'draft', label: 'Draft' },
-              { value: 'retired', label: 'Retired' },
+              { value: 'active', label: t('admin.noteTemplates.status.active') },
+              { value: 'draft', label: t('admin.noteTemplates.status.draft') },
+              { value: 'retired', label: t('admin.noteTemplates.status.retired') },
             ]}
             value={formData.status}
             onChange={(value) => setFormData({ ...formData, status: value as 'active' | 'draft' | 'retired' })}
@@ -148,9 +141,9 @@ export function EditNoteTemplateModal({ opened, onClose, template }: EditNoteTem
 
           <div>
             <Group justify="space-between" mb="sm">
-              <strong>Template Fields</strong>
+              <strong>{t('admin.noteTemplates.fields')}</strong>
               <Button size="xs" variant="light" onClick={handleAddField}>
-                Add Field
+                {t('admin.noteTemplates.addField')}
               </Button>
             </Group>
 
@@ -158,21 +151,21 @@ export function EditNoteTemplateModal({ opened, onClose, template }: EditNoteTem
               {items.map((item, index) => (
                 <Group key={index} align="flex-start" gap="xs">
                   <TextInput
-                    placeholder="Field label"
+                    placeholder={t('admin.noteTemplates.fieldLabel')}
                     value={item.text}
                     onChange={(e) => handleUpdateField(index, { text: e.currentTarget.value })}
                     style={{ flex: 1 }}
                     size="sm"
                   />
                   <Select
-                    placeholder="Type"
+                    placeholder={t('admin.noteTemplates.fieldType')}
                     data={[
-                      { value: 'string', label: 'Short Text' },
-                      { value: 'text', label: 'Long Text' },
-                      { value: 'boolean', label: 'Yes/No' },
-                      { value: 'date', label: 'Date' },
-                      { value: 'time', label: 'Time' },
-                      { value: 'dateTime', label: 'Date & Time' },
+                      { value: 'string', label: t('admin.noteTemplates.fieldType.string') },
+                      { value: 'text', label: t('admin.noteTemplates.fieldType.text') },
+                      { value: 'boolean', label: t('admin.noteTemplates.fieldType.boolean') },
+                      { value: 'date', label: t('admin.noteTemplates.fieldType.date') },
+                      { value: 'time', label: t('admin.noteTemplates.fieldType.time') },
+                      { value: 'dateTime', label: t('admin.noteTemplates.fieldType.dateTime') },
                     ]}
                     value={item.type}
                     onChange={(value) => handleUpdateField(index, { type: value as any })}
@@ -185,7 +178,7 @@ export function EditNoteTemplateModal({ opened, onClose, template }: EditNoteTem
                     color="red"
                     onClick={() => handleRemoveField(index)}
                   >
-                    Remove
+                    {t('common.delete')}
                   </Button>
                 </Group>
               ))}
@@ -194,10 +187,10 @@ export function EditNoteTemplateModal({ opened, onClose, template }: EditNoteTem
 
           <Group justify="flex-end" mt="md">
             <Button variant="default" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={loading} leftSection={<IconCheck size={16} />}>
-              Save Template
+              {t('common.save')}
             </Button>
           </Group>
         </Stack>

@@ -1,9 +1,10 @@
 import { Modal, Button, TextInput, Select, Stack, Group } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
 import { useMedplum } from '@medplum/react';
 import { Patient } from '@medplum/fhirtypes';
 import { JSX, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
+import { handleError } from '../../utils/errorHandling';
 
 interface NewPatientModalProps {
   opened: boolean;
@@ -11,6 +12,7 @@ interface NewPatientModalProps {
 }
 
 export function NewPatientModal({ opened, onClose }: NewPatientModalProps): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -72,29 +74,27 @@ export function NewPatientModal({ opened, onClose }: NewPatientModalProps): JSX.
       onClose();
       navigate(`/patient/${created.id}`);
     } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to create patient. Please try again.',
-        color: 'red',
-      });
+      handleError(error, t('patient.createError'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Create New Patient" size="lg">
+    <Modal opened={opened} onClose={onClose} title={t('patient.createNew')} size="lg">
       <form onSubmit={handleSubmit}>
         <Stack gap="md">
           <Group grow>
             <TextInput
-              label="First Name"
+              label={t('common.firstName')}
+              placeholder={t('common.firstNamePlaceholder')}
               required
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
             />
             <TextInput
-              label="Last Name"
+              label={t('common.lastName')}
+              placeholder={t('common.lastNamePlaceholder')}
               required
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
@@ -103,20 +103,21 @@ export function NewPatientModal({ opened, onClose }: NewPatientModalProps): JSX.
 
           <Group grow>
             <TextInput
-              label="Date of Birth"
+              label={t('common.dateOfBirth')}
               type="date"
               required
               value={formData.birthDate}
               onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
             />
             <Select
-              label="Gender"
+              label={t('common.gender')}
+              placeholder={t('common.selectGender')}
               required
               data={[
-                { value: 'male', label: 'Male' },
-                { value: 'female', label: 'Female' },
-                { value: 'other', label: 'Other' },
-                { value: 'unknown', label: 'Unknown' },
+                { value: 'male', label: t('common.male') },
+                { value: 'female', label: t('common.female') },
+                { value: 'other', label: t('common.other') },
+                { value: 'unknown', label: t('common.unknown') },
               ]}
               value={formData.gender}
               onChange={(value) => setFormData({ ...formData, gender: value || '' })}
@@ -125,13 +126,15 @@ export function NewPatientModal({ opened, onClose }: NewPatientModalProps): JSX.
 
           <Group grow>
             <TextInput
-              label="Email"
+              label={t('common.email')}
+              placeholder={t('common.emailPlaceholder')}
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
             <TextInput
-              label="Phone"
+              label={t('common.phoneNumber')}
+              placeholder={t('common.phonePlaceholder')}
               type="tel"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -139,24 +142,28 @@ export function NewPatientModal({ opened, onClose }: NewPatientModalProps): JSX.
           </Group>
 
           <TextInput
-            label="Address Line"
+            label={t('common.addressLine')}
+            placeholder={t('common.addressPlaceholder')}
             value={formData.addressLine}
             onChange={(e) => setFormData({ ...formData, addressLine: e.target.value })}
           />
 
           <Group grow>
             <TextInput
-              label="City"
+              label={t('common.city')}
+              placeholder={t('common.cityPlaceholder')}
               value={formData.city}
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
             />
             <TextInput
-              label="State"
+              label={t('common.state')}
+              placeholder={t('common.statePlaceholder')}
               value={formData.state}
               onChange={(e) => setFormData({ ...formData, state: e.target.value })}
             />
             <TextInput
-              label="Postal Code"
+              label={t('common.postalCode')}
+              placeholder={t('common.postalCodePlaceholder')}
               value={formData.postalCode}
               onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
             />
@@ -164,10 +171,10 @@ export function NewPatientModal({ opened, onClose }: NewPatientModalProps): JSX.
 
           <Group justify="flex-end" mt="md">
             <Button variant="default" onClick={onClose} disabled={loading}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={loading}>
-              Create Patient
+              {t('patient.createButton')}
             </Button>
           </Group>
         </Stack>

@@ -1,8 +1,8 @@
 import { Paper, Title, Text, Stack, Group, Button, Table, Badge, ActionIcon, ColorSwatch } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
 import { Document, Loading, useMedplum } from '@medplum/react';
 import { IconPlus, IconEdit, IconTrash, IconClock, IconCalendar } from '@tabler/icons-react';
 import { JSX, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   getAppointmentTypes, 
   initializeAppointmentTypes,
@@ -11,9 +11,10 @@ import {
 } from '../../utils/appointmentTypes';
 import { EditAppointmentTypeModal } from '../../components/admin/EditAppointmentTypeModal';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
-import { getPriceFromResource } from '../../utils/billing';
+import { showSuccess, handleError } from '../../utils/errorHandling';
 
 export function AppointmentTypesPage(): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const [types, setTypes] = useState<AppointmentTypeDefinition[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,17 +38,9 @@ export function AppointmentTypesPage(): JSX.Element {
     try {
       await initializeAppointmentTypes(medplum);
       await loadTypes();
-      notifications.show({
-        title: 'Success',
-        message: 'Default appointment types initialized successfully!',
-        color: 'green',
-      });
+      showSuccess(t('admin.appointmentTypes.initializeSuccess'));
     } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to initialize appointment types',
-        color: 'red',
-      });
+      handleError(error, t('message.error.initialize'));
     } finally {
       setInitializing(false);
     }
@@ -64,21 +57,13 @@ export function AppointmentTypesPage(): JSX.Element {
   };
 
   const handleDelete = async (type: AppointmentTypeDefinition) => {
-    if (confirm(`Are you sure you want to delete the appointment type "${type.display}"?`)) {
+    if (confirm(t('admin.appointmentTypes.confirmDelete', { name: type.display }))) {
       try {
         await deleteAppointmentType(medplum, type.code);
         await loadTypes();
-        notifications.show({
-          title: 'Success',
-          message: 'Appointment type deleted successfully',
-          color: 'green',
-        });
+        showSuccess(t('admin.appointmentTypes.deleteSuccess'));
       } catch (error) {
-        notifications.show({
-          title: 'Error',
-          message: 'Failed to delete appointment type',
-          color: 'red',
-        });
+        handleError(error, t('message.error.delete'));
       }
     }
   };
@@ -105,11 +90,11 @@ export function AppointmentTypesPage(): JSX.Element {
             <Title order={2}>
               <Group gap="xs">
                 <IconCalendar size={28} />
-                Appointment Types
+                {t('admin.appointmentTypes.title')}
               </Group>
             </Title>
             <Text size="sm" c="dimmed" mt="xs">
-              Manage appointment types and their durations for scheduling
+              {t('admin.appointmentTypes.subtitle')}
             </Text>
           </div>
           <Group>
@@ -119,11 +104,11 @@ export function AppointmentTypesPage(): JSX.Element {
                 onClick={handleInitializeDefaults}
                 loading={initializing}
               >
-                Initialize Default Types
+                {t('admin.appointmentTypes.initializeDefaults')}
               </Button>
             )}
             <Button leftSection={<IconPlus size={16} />} onClick={handleNew}>
-              New Appointment Type
+              {t('admin.appointmentTypes.new')}
             </Button>
           </Group>
         </Group>
@@ -136,17 +121,17 @@ export function AppointmentTypesPage(): JSX.Element {
               <IconCalendar size={48} style={{ color: '#adb5bd' }} />
               <div style={{ textAlign: 'center' }}>
                 <Text size="lg" fw={500} mb="xs">
-                  No Appointment Types Found
+                  {t('admin.appointmentTypes.noTypes')}
                 </Text>
                 <Text size="sm" c="dimmed" mb="md">
-                  Initialize the default appointment types to get started with scheduling
+                  {t('admin.appointmentTypes.noTypesDescription')}
                 </Text>
                 <Button
                   onClick={handleInitializeDefaults}
                   loading={initializing}
                   leftSection={<IconPlus size={16} />}
                 >
-                  Initialize Default Types
+                  {t('admin.appointmentTypes.initializeDefaults')}
                 </Button>
               </div>
             </Stack>
@@ -155,13 +140,13 @@ export function AppointmentTypesPage(): JSX.Element {
           <Table striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>Color</Table.Th>
-                <Table.Th>Name</Table.Th>
-                <Table.Th>Code</Table.Th>
-                <Table.Th>Duration</Table.Th>
-                <Table.Th>Visit Fee</Table.Th>
-                <Table.Th>Description</Table.Th>
-                <Table.Th>Actions</Table.Th>
+                <Table.Th>{t('admin.appointmentTypes.color')}</Table.Th>
+                <Table.Th>{t('common.name')}</Table.Th>
+                <Table.Th>{t('admin.appointmentTypes.code')}</Table.Th>
+                <Table.Th>{t('admin.appointmentTypes.duration')}</Table.Th>
+                <Table.Th>{t('admin.appointmentTypes.visitFee')}</Table.Th>
+                <Table.Th>{t('common.description')}</Table.Th>
+                <Table.Th>{t('common.action')}</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -183,7 +168,7 @@ export function AppointmentTypesPage(): JSX.Element {
                   <Table.Td>
                     <Group gap="xs">
                       <IconClock size={16} style={{ color: '#666' }} />
-                      <Text size="sm">{type.duration} min</Text>
+                      <Text size="sm">{type.duration} {t('common.minutes')}</Text>
                     </Group>
                   </Table.Td>
                   <Table.Td>
@@ -193,7 +178,7 @@ export function AppointmentTypesPage(): JSX.Element {
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed" lineClamp={1}>
-                      {type.description || '-'}
+                      {type.description || t('common.dash')}
                     </Text>
                   </Table.Td>
                   <Table.Td>

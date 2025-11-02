@@ -3,10 +3,13 @@ import { Container, Title, Text, Button, Group, Stack, Table, Badge, ActionIcon,
 import { IconPlus, IconEdit, IconTrash } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
 import { ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { notifications } from '@mantine/notifications';
+import { useTranslation } from 'react-i18next';
+import { handleError, showSuccess } from '../../utils/errorHandling';
+import { logger } from '../../utils/logger';
 import { getAllDiagnosisCodes, initializeDefaultDiagnosisCodes, addDiagnosisCode, updateDiagnosisCode, deleteDiagnosisCode } from '../../utils/diagnosisCodes';
 
 export function DiagnosisCodesPage(): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const [codes, setCodes] = useState<ValueSetExpansionContains[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,11 +32,7 @@ export function DiagnosisCodesPage(): JSX.Element {
       setCodes(allCodes);
     } catch (error) {
       logger.error('Failed to load diagnosis codes', error);
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to load diagnosis codes',
-        color: 'red',
-      });
+      handleError(error, t('admin.diagnosisCodes.loadError'));
     } finally {
       setLoading(false);
     }
@@ -42,19 +41,11 @@ export function DiagnosisCodesPage(): JSX.Element {
   const handleInitializeDefaults = async () => {
     try {
       await initializeDefaultDiagnosisCodes(medplum);
-      notifications.show({
-        title: 'Success',
-        message: 'Default ICD-10 codes initialized',
-        color: 'green',
-      });
+      showSuccess(t('admin.diagnosisCodes.initializeSuccess'));
       loadCodes();
     } catch (error) {
       logger.error('Failed to initialize defaults', error);
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to initialize default codes',
-        color: 'red',
-      });
+      handleError(error, t('admin.diagnosisCodes.initializeError'));
     }
   };
 
@@ -80,11 +71,7 @@ export function DiagnosisCodesPage(): JSX.Element {
 
   const handleSave = async () => {
     if (!formData.code || !formData.display) {
-      notifications.show({
-        title: 'Validation Error',
-        message: 'Code and display are required',
-        color: 'yellow',
-      });
+      handleError(new Error(t('admin.diagnosisCodes.validationError')), t('modal.validationError'));
       return;
     }
 
@@ -98,49 +85,29 @@ export function DiagnosisCodesPage(): JSX.Element {
           formData.display,
           formData.system
         );
-        notifications.show({
-          title: 'Success',
-          message: 'Diagnosis code updated',
-          color: 'green',
-        });
+        showSuccess(t('admin.diagnosisCodes.updateSuccess'));
       } else {
         await addDiagnosisCode(medplum, formData.code, formData.display, formData.system);
-        notifications.show({
-          title: 'Success',
-          message: 'Diagnosis code added',
-          color: 'green',
-        });
+        showSuccess(t('admin.diagnosisCodes.addSuccess'));
       }
       setModalOpen(false);
       loadCodes();
     } catch (error: any) {
-      notifications.show({
-        title: 'Error',
-        message: error.message || 'Failed to save diagnosis code',
-        color: 'red',
-      });
+      handleError(error, t('admin.diagnosisCodes.saveError'));
     }
   };
 
   const handleDelete = async (code: ValueSetExpansionContains) => {
-    if (!confirm(`Delete diagnosis code ${code.code}?`)) {
+    if (!confirm(t('admin.diagnosisCodes.deleteConfirm', { code: code.code }))) {
       return;
     }
 
     try {
       await deleteDiagnosisCode(medplum, code.code!, code.system!);
-      notifications.show({
-        title: 'Success',
-        message: 'Diagnosis code deleted',
-        color: 'green',
-      });
+      showSuccess(t('admin.diagnosisCodes.deleteSuccess'));
       loadCodes();
     } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to delete diagnosis code',
-        color: 'red',
-      });
+      handleError(error, t('admin.diagnosisCodes.deleteError'));
     }
   };
 
@@ -151,9 +118,9 @@ export function DiagnosisCodesPage(): JSX.Element {
   };
 
   const getSystemLabel = (system?: string) => {
-    if (system === 'http://hl7.org/fhir/sid/icd-10') return 'ICD-10';
-    if (system === 'http://snomed.info/sct') return 'SNOMED';
-    return 'Custom';
+    if (system === 'http://hl7.org/fhir/sid/icd-10') return t('admin.diagnosisCodes.systems.icd10');
+    if (system === 'http://snomed.info/sct') return t('admin.diagnosisCodes.systems.snomed');
+    return t('admin.diagnosisCodes.systems.custom');
   };
 
   return (
@@ -161,35 +128,35 @@ export function DiagnosisCodesPage(): JSX.Element {
       <Stack gap="xl">
         <Group justify="space-between">
           <div>
-            <Title order={2}>Diagnosis Codes</Title>
-            <Text c="dimmed">Manage ICD-10 and custom diagnosis codes</Text>
+            <Title order={2}>{t('admin.diagnosisCodes.title')}</Title>
+            <Text c="dimmed">{t('admin.diagnosisCodes.subtitle')}</Text>
           </div>
           <Group>
             {codes.length === 0 && (
               <Button onClick={handleInitializeDefaults} loading={loading}>
-                Initialize ICD-10 Defaults
+                {t('admin.diagnosisCodes.initializeDefaults')}
               </Button>
             )}
             <Button leftSection={<IconPlus size={16} />} onClick={openCreateModal}>
-              Add Diagnosis Code
+              {t('admin.diagnosisCodes.add')}
             </Button>
           </Group>
         </Group>
 
         {loading ? (
-          <Text>Loading...</Text>
+          <Text>{t('common.loading')}</Text>
         ) : codes.length === 0 ? (
           <Text c="dimmed">
-            No diagnosis codes configured. Click "Initialize ICD-10 Defaults" to load common diagnoses.
+            {t('admin.diagnosisCodes.noCodesConfigured')}
           </Text>
         ) : (
           <Table striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>Code</Table.Th>
-                <Table.Th>Display</Table.Th>
-                <Table.Th>System</Table.Th>
-                <Table.Th style={{ width: '100px' }}>Actions</Table.Th>
+                <Table.Th>{t('admin.diagnosisCodes.code')}</Table.Th>
+                <Table.Th>{t('admin.diagnosisCodes.display')}</Table.Th>
+                <Table.Th>{t('admin.diagnosisCodes.system')}</Table.Th>
+                <Table.Th style={{ width: '100px' }}>{t('admin.diagnosisCodes.actions')}</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -232,15 +199,15 @@ export function DiagnosisCodesPage(): JSX.Element {
       <Modal
         opened={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editingCode ? 'Edit Diagnosis Code' : 'Add Diagnosis Code'}
+        title={editingCode ? t('admin.diagnosisCodes.edit') : t('admin.diagnosisCodes.add')}
       >
         <Stack gap="md">
           <Select
-            label="Code System"
+            label={t('admin.diagnosisCodes.codeSystem')}
             data={[
-              { value: 'http://hl7.org/fhir/sid/icd-10', label: 'ICD-10' },
-              { value: 'http://snomed.info/sct', label: 'SNOMED CT' },
-              { value: 'custom', label: 'Custom' },
+              { value: 'http://hl7.org/fhir/sid/icd-10', label: t('admin.diagnosisCodes.systems.icd10') },
+              { value: 'http://snomed.info/sct', label: t('admin.diagnosisCodes.systems.snomed') },
+              { value: 'custom', label: t('admin.diagnosisCodes.systems.custom') },
             ]}
             value={formData.system}
             onChange={(value) => setFormData({ ...formData, system: value || 'http://hl7.org/fhir/sid/icd-10' })}
@@ -248,16 +215,16 @@ export function DiagnosisCodesPage(): JSX.Element {
           />
 
           <TextInput
-            label="Code"
-            placeholder="E.g., E11.9"
+            label={t('admin.diagnosisCodes.code')}
+            placeholder={t('admin.diagnosisCodes.codePlaceholder')}
             value={formData.code}
             onChange={(e) => setFormData({ ...formData, code: e.currentTarget.value })}
             required
           />
 
           <TextInput
-            label="Display Name"
-            placeholder="E.g., Type 2 diabetes mellitus without complications"
+            label={t('admin.diagnosisCodes.display')}
+            placeholder={t('admin.diagnosisCodes.displayPlaceholder')}
             value={formData.display}
             onChange={(e) => setFormData({ ...formData, display: e.currentTarget.value })}
             required
@@ -265,10 +232,10 @@ export function DiagnosisCodesPage(): JSX.Element {
 
           <Group justify="flex-end" mt="md">
             <Button variant="subtle" onClick={() => setModalOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSave}>
-              {editingCode ? 'Update' : 'Add'}
+              {editingCode ? t('common.update') : t('common.add')}
             </Button>
           </Group>
         </Stack>

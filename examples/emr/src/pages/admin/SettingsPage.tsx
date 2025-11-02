@@ -1,11 +1,13 @@
 import { Paper, Title, Text, Stack, TextInput, Button, Group, FileInput, Image } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
 import { Document, useMedplum } from '@medplum/react';
 import { IconSettings, IconUpload, IconCheck } from '@tabler/icons-react';
 import { JSX, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { handleError, showSuccess } from '../../utils/errorHandling';
 import { getEMRSettings, saveEMRSettings } from '../../utils/settings';
 
 export function SettingsPage(): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
   const [emrName, setEmrName] = useState('Medplum EMR');
@@ -56,21 +58,13 @@ export function SettingsPage(): JSX.Element {
         logo: logoDataUrl,
       });
 
-      notifications.show({
-        title: 'Success',
-        message: 'Settings saved successfully!',
-        color: 'green',
-      });
+      showSuccess(t('admin.settings.saveSuccess'));
       
       // Notify app that settings have changed
       // The Header component will pick this up and reload settings
       window.dispatchEvent(new Event('emr-settings-changed'));
     } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to save settings. Please try again.',
-        color: 'red',
-      });
+      handleError(error, t('admin.settings.saveError'));
     } finally {
       setLoading(false);
     }
@@ -88,9 +82,9 @@ export function SettingsPage(): JSX.Element {
         <Group mb="lg">
           <IconSettings size={24} style={{ color: '#228be6' }} />
           <div>
-            <Title order={2}>EMR Settings</Title>
+            <Title order={2}>{t('admin.settings.title')}</Title>
             <Text size="sm" c="dimmed">
-              Customize your EMR name and logo
+              {t('admin.settings.subtitle')}
             </Text>
           </div>
         </Group>
@@ -99,9 +93,9 @@ export function SettingsPage(): JSX.Element {
           <Stack gap="lg">
             {/* EMR Name */}
             <TextInput
-              label="EMR Name"
-              description="This name will appear in the header"
-              placeholder="My Hospital EMR"
+              label={t('admin.settings.emrName')}
+              description={t('admin.settings.emrNameDescription')}
+              placeholder={t('admin.settings.emrNamePlaceholder')}
               required
               value={emrName}
               onChange={(event) => setEmrName(event.currentTarget.value)}
@@ -111,10 +105,10 @@ export function SettingsPage(): JSX.Element {
             {/* Logo Upload */}
             <div>
               <Text size="sm" fw={500} mb="xs">
-                EMR Logo
+                {t('admin.settings.emrLogo')}
               </Text>
               <Text size="xs" c="dimmed" mb="md">
-                Upload a logo to display in the header (recommended size: 40px height, PNG or JPG)
+                {t('admin.settings.emrLogoDescription')}
               </Text>
 
               {/* Current/Preview Logo */}
@@ -123,7 +117,7 @@ export function SettingsPage(): JSX.Element {
                   <Group justify="space-between">
                     <div>
                       <Text size="sm" fw={500} mb="xs">
-                        {logoPreview ? 'Logo Preview' : 'Current Logo'}
+                        {logoPreview ? t('admin.settings.logoPreview') : t('admin.settings.currentLogo')}
                       </Text>
                       <Image
                         src={logoPreview || currentLogo || ''}
@@ -139,7 +133,7 @@ export function SettingsPage(): JSX.Element {
                       size="sm"
                       onClick={handleRemoveLogo}
                     >
-                      Remove Logo
+                      {t('admin.settings.removeLogo')}
                     </Button>
                   </Group>
                 </Paper>
@@ -147,7 +141,7 @@ export function SettingsPage(): JSX.Element {
 
               <FileInput
                 leftSection={<IconUpload size={16} />}
-                placeholder="Choose logo file"
+                placeholder={t('admin.settings.chooseLogoFile')}
                 accept="image/png,image/jpeg,image/jpg,image/svg+xml"
                 value={logoFile}
                 onChange={handleLogoChange}
@@ -162,7 +156,7 @@ export function SettingsPage(): JSX.Element {
                 leftSection={<IconCheck size={16} />}
                 size="md"
               >
-                Save Settings
+                {t('admin.settings.saveSettings')}
               </Button>
             </Group>
           </Stack>
@@ -171,10 +165,10 @@ export function SettingsPage(): JSX.Element {
         {/* Info Box */}
         <Paper p="md" mt="xl" bg="blue.0" radius="md">
           <Text size="sm" fw={500} mb="xs">
-            💡 Note
+            {t('admin.settings.note')}
           </Text>
           <Text size="sm">
-            After saving settings, the page will refresh automatically to display the new name and logo in the header.
+            {t('admin.settings.noteDescription')}
           </Text>
         </Paper>
       </Paper>

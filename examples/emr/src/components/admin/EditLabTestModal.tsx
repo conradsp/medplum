@@ -2,9 +2,10 @@ import { JSX, useState, useEffect } from 'react';
 import { Modal, TextInput, Textarea, Button, Group, Stack, Select, NumberInput } from '@mantine/core';
 import { useMedplum } from '@medplum/react';
 import { ActivityDefinition } from '@medplum/fhirtypes';
-import { notifications } from '@mantine/notifications';
+import { useTranslation } from 'react-i18next';
 import { saveLabTest, LabTestDefinition, LabTestResultField } from '../../utils/labTests';
 import { getPriceFromResource } from '../../utils/billing';
+import { showSuccess, handleError } from '../../utils/errorHandling';
 
 interface EditLabTestModalProps {
   opened: boolean;
@@ -35,6 +36,7 @@ const SPECIMEN_TYPES = [
 ];
 
 export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProps): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
   
@@ -94,20 +96,12 @@ export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProp
   };
   const handleSave = async (): Promise<void> => {
     if (!display.trim()) {
-      notifications.show({
-        title: 'Validation Error',
-        message: 'Test name is required',
-        color: 'red',
-      });
+      handleError(new Error(t('admin.labTests.validation.nameRequired')), t('modal.validationError'));
       return;
     }
 
     if (!code.trim()) {
-      notifications.show({
-        title: 'Validation Error',
-        message: 'Test code is required',
-        color: 'red',
-      });
+      handleError(new Error(t('admin.labTests.validation.codeRequired')), t('modal.validationError'));
       return;
     }
 
@@ -126,18 +120,10 @@ export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProp
 
       await saveLabTest(medplum, testDef);
       
-      notifications.show({
-        title: 'Success',
-        message: test ? 'Lab test updated successfully' : 'Lab test created successfully',
-        color: 'green',
-      });
+      showSuccess(test ? t('admin.labTests.updateSuccess') : t('admin.labTests.createSuccess'));
       onClose(true);
-    } catch (_error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to save lab test',
-        color: 'red',
-      });
+    } catch (error) {
+      handleError(error, t('message.error.save'));
     } finally {
       setLoading(false);
     }
@@ -147,63 +133,63 @@ export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProp
     <Modal
       opened={opened}
       onClose={() => onClose(false)}
-      title={test ? 'Edit Lab Test' : 'Add Lab Test'}
+      title={test ? t('admin.labTests.edit') : t('admin.labTests.add')}
       size="lg"
     >
       <Stack gap="md">
         <TextInput
-          label="Test Code"
-          placeholder="e.g., cmp, hba1c"
+          label={t('admin.labTests.testCode')}
+          placeholder={t('admin.labTests.testCodePlaceholder')}
           value={code}
           onChange={(e) => setCode(e.currentTarget.value)}
           required
           disabled={!!test}
-          description={test ? 'Cannot change code of existing test' : 'Unique identifier for this test'}
+          description={test ? t('admin.labTests.codeDisabled') : t('admin.labTests.codeDescription')}
         />
 
         <TextInput
-          label="Test Name"
-          placeholder="e.g., Comprehensive Metabolic Panel"
+          label={t('admin.labTests.testName')}
+          placeholder={t('admin.labTests.testNamePlaceholder')}
           value={display}
           onChange={(e) => setDisplay(e.currentTarget.value)}
           required
         />
 
         <TextInput
-          label="LOINC Code"
-          placeholder="e.g., 24323-8"
+          label={t('admin.labTests.loincCode')}
+          placeholder={t('admin.labTests.loincCodePlaceholder')}
           value={loincCode}
           onChange={(e) => setLoincCode(e.currentTarget.value)}
-          description="Optional LOINC code for standard identification"
+          description={t('admin.labTests.loincDescription')}
         />
 
         <Select
-          label="Category"
-          placeholder="Select category"
-          data={CATEGORIES}
+          label={t('admin.labTests.category')}
+          placeholder={t('admin.labTests.selectCategory')}
+          data={CATEGORIES.map(cat => ({ value: cat, label: t(`admin.labTests.categories.${cat.toLowerCase()}`) }))}
           value={category}
           onChange={setCategory}
           required
         />
 
         <Select
-          label="Specimen Type"
-          placeholder="Select specimen type"
-          data={SPECIMEN_TYPES}
+          label={t('admin.labTests.specimenType')}
+          placeholder={t('admin.labTests.selectSpecimen')}
+          data={SPECIMEN_TYPES.map(type => ({ value: type, label: t(`admin.labTests.specimenTypes.${type.toLowerCase().replace(/\s+/g, '')}`) }))}
           value={specimenType}
           onChange={setSpecimenType}
         />
 
         <Textarea
-          label="Description"
-          placeholder="Brief description of the test"
+          label={t('common.description')}
+          placeholder={t('admin.labTests.descriptionPlaceholder')}
           value={description}
           onChange={(e) => setDescription(e.currentTarget.value)}
           rows={3}
         />
 
         <NumberInput
-          label="Price ($)"
+          label={t('common.price')}
           value={price}
           onChange={(value) => setPrice(Number(value) || 0)}
           min={0}
@@ -215,55 +201,60 @@ export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProp
         {/* Result Fields Section */}
         <Stack gap="xs">
           <Group justify="space-between">
-            <div style={{ fontWeight: 500 }}>Result Fields</div>
-            <Button size="xs" variant="light" onClick={handleAddField}>Add Field</Button>
+            <div style={{ fontWeight: 500 }}>{t('admin.labTests.resultFields')}</div>
+            <Button size="xs" variant="light" onClick={handleAddField}>{t('admin.labTests.addField')}</Button>
           </Group>
           {resultFields.length === 0 && (
-            <div style={{ color: '#888', fontSize: '0.9em' }}>No result fields defined</div>
+            <div style={{ color: '#888', fontSize: '0.9em' }}>{t('admin.labTests.noResultFields')}</div>
           )}
           {resultFields.map((field, idx) => (
             <Group key={idx} gap="xs" align="flex-end">
               <TextInput
-                label="Name"
+                label={t('common.name')}
                 value={field.name}
                 onChange={e => handleFieldChange(idx, { name: e.currentTarget.value })}
-                placeholder="e.g. glucose"
+                placeholder={t('admin.labTests.fieldNamePlaceholder')}
                 required
                 style={{ width: 120 }}
               />
               <TextInput
-                label="Label"
+                label={t('admin.labTests.label')}
                 value={field.label}
                 onChange={e => handleFieldChange(idx, { label: e.currentTarget.value })}
-                placeholder="e.g. Glucose"
+                placeholder={t('admin.labTests.labelPlaceholder')}
                 required
                 style={{ width: 140 }}
               />
               <Select
-                label="Type"
-                data={[{ value: 'string', label: 'String' }, { value: 'number', label: 'Number' }, { value: 'boolean', label: 'Boolean' }, { value: 'select', label: 'Select' }]}
+                label={t('common.type')}
+                data={[
+                  { value: 'string', label: t('admin.labTests.types.string') }, 
+                  { value: 'number', label: t('admin.labTests.types.number') }, 
+                  { value: 'boolean', label: t('admin.labTests.types.boolean') }, 
+                  { value: 'select', label: t('admin.labTests.types.select') }
+                ]}
                 value={field.type}
                 onChange={val => handleFieldChange(idx, { type: val as LabTestResultField['type'] })}
                 style={{ width: 100 }}
               />
               <TextInput
-                label="Unit"
+                label={t('admin.labTests.unit')}
                 value={field.unit || ''}
                 onChange={e => handleFieldChange(idx, { unit: e.currentTarget.value })}
-                placeholder="e.g. mg/dL"
+                placeholder={t('admin.labTests.unitPlaceholder')}
                 style={{ width: 100 }}
               />
               {field.type === 'select' && (
                 <TextInput
-                  label="Options (comma separated)"
+                  label={t('admin.labTests.options')}
                   value={field.options?.join(',') || ''}
                   onChange={e => handleFieldChange(idx, { options: e.currentTarget.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                  placeholder="e.g. Positive,Negative"
+                  placeholder={t('admin.labTests.optionsPlaceholder')}
                   style={{ width: 160 }}
                 />
               )}
               <Button size="xs" color="red" variant="subtle" onClick={() => handleRemoveField(idx)}>
-                Remove
+                {t('common.delete')}
               </Button>
             </Group>
           ))}
@@ -271,10 +262,10 @@ export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProp
 
         <Group justify="flex-end" mt="md">
           <Button variant="subtle" onClick={() => onClose(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSave} loading={loading}>
-            {test ? 'Update' : 'Create'}
+            {test ? t('common.update') : t('common.create')}
           </Button>
         </Group>
       </Stack>

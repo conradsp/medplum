@@ -151,7 +151,7 @@ export function EncounterHeader({ encounter, medplum, onStatusChange }: Encounte
           <Group gap="xs">
             <IconCalendar size={16} />
             <div>
-              <Text size="xs" c="dimmed">Date</Text>
+              <Text size="xs" c="dimmed">{t('encounter.date')}</Text>
               <Text size="sm">{displayDate}</Text>
             </div>
           </Group>
@@ -160,7 +160,7 @@ export function EncounterHeader({ encounter, medplum, onStatusChange }: Encounte
           <Group gap="xs">
             <IconUser size={16} />
             <div>
-              <Text size="xs" c="dimmed">Class</Text>
+              <Text size="xs" c="dimmed">{t('encounter.class')}</Text>
               <Text size="sm">{encounterClass}</Text>
             </div>
           </Group>
@@ -169,14 +169,14 @@ export function EncounterHeader({ encounter, medplum, onStatusChange }: Encounte
           <Group gap="xs">
             <IconClock size={16} />
             <div>
-              <Text size="xs" c="dimmed">Duration</Text>
+              <Text size="xs" c="dimmed">{t('encounter.duration', 'Duration')}</Text>
               <Text size="sm">{duration}</Text>
             </div>
           </Group>
         </Grid.Col>
         <Grid.Col span={3}>
           <div>
-            <Text size="xs" c="dimmed">Reason</Text>
+            <Text size="xs" c="dimmed">{t('encounter.reasonForVisit')}</Text>
             <Text size="sm">{reason}</Text>
           </div>
         </Grid.Col>

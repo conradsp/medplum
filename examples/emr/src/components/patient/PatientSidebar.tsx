@@ -91,14 +91,14 @@ export function PatientSidebar({ patient, onPatientUpdate }: PatientSidebarProps
           {/* Basic Demographics */}
           <Stack gap="xs">
             <div>
-              <Text size="xs" c="dimmed">{t('patient.dateOfBirth', 'Date of Birth')}</Text>
+              <Text size="xs" c="dimmed">{t('patient.dateOfBirth')}</Text>
               <Text size="sm" fw={500}>
                 {patient.birthDate ? `${formatDate(patient.birthDate)} (${age} ${t('patient.years', 'years')})` : '-'}
               </Text>
             </div>
 
             <div>
-              <Text size="xs" c="dimmed">{t('patient.gender', 'Gender')}</Text>
+              <Text size="xs" c="dimmed">{t('patient.gender')}</Text>
               <Text size="sm" fw={500} tt="capitalize">
                 {patient.gender || '-'}
               </Text>
@@ -106,7 +106,7 @@ export function PatientSidebar({ patient, onPatientUpdate }: PatientSidebarProps
 
             {patient.maritalStatus && (
               <div>
-                <Text size="xs" c="dimmed">{t('patient.maritalStatus', 'Marital Status')}</Text>
+                <Text size="xs" c="dimmed">{t('patient.maritalStatus')}</Text>
                 <Text size="sm" fw={500} tt="capitalize">
                   {patient.maritalStatus.coding?.[0]?.display || 
                    patient.maritalStatus.text || '-'}
@@ -116,7 +116,7 @@ export function PatientSidebar({ patient, onPatientUpdate }: PatientSidebarProps
 
             {patient.communication && patient.communication.length > 0 && (
               <div>
-                <Text size="xs" c="dimmed">{t('patient.language', 'Language')}</Text>
+                <Text size="xs" c="dimmed">{t('patient.language')}</Text>
                 <Text size="sm" fw={500}>
                   {patient.communication[0].language?.coding?.[0]?.display || 
                    patient.communication[0].language?.text || '-'}
@@ -129,7 +129,7 @@ export function PatientSidebar({ patient, onPatientUpdate }: PatientSidebarProps
 
       {/* Contact Information */}
       <Paper shadow="sm" p="md" withBorder>
-        <Title order={5} mb="sm">{t('patient.contactInformation', 'Contact Information')}</Title>
+        <Title order={5} mb="sm">{t('patient.contactInformation')}</Title>
         <Stack gap="xs">
           {patient.telecom?.filter(tel => tel.system === 'phone').map((phone, idx) => (
             <div key={idx}>
@@ -169,7 +169,7 @@ export function PatientSidebar({ patient, onPatientUpdate }: PatientSidebarProps
       {/* Emergency Contacts */}
       <Paper shadow="sm" p="md" withBorder>
         <Group justify="space-between" mb="sm">
-          <Title order={5}>{t('patient.emergencyContacts', 'Emergency Contacts')}</Title>
+          <Title order={5}>{t('patient.emergencyContacts')}</Title>
           <ActionIcon 
             variant="light" 
             size="sm"
@@ -210,7 +210,7 @@ export function PatientSidebar({ patient, onPatientUpdate }: PatientSidebarProps
       {/* General Practitioner */}
       <Paper shadow="sm" p="md" withBorder>
         <Group justify="space-between" mb="sm">
-          <Title order={5}>{t('patient.generalPractitioner', 'General Practitioner')}</Title>
+          <Title order={5}>{t('patient.generalPractitioner')}</Title>
           <ActionIcon 
             variant="light" 
             size="sm"
@@ -235,7 +235,7 @@ export function PatientSidebar({ patient, onPatientUpdate }: PatientSidebarProps
       {/* Insurance */}
       <Paper shadow="sm" p="md" withBorder>
         <Group justify="space-between" mb="sm">
-          <Title order={5}>{t('patient.insurance', 'Insurance')}</Title>
+          <Title order={5} mb="sm">{t('patient.insurance')}</Title>
           <ActionIcon 
             variant="light" 
             size="sm"
@@ -259,7 +259,7 @@ export function PatientSidebar({ patient, onPatientUpdate }: PatientSidebarProps
 
       {/* Managing Organization */}
       <Paper shadow="sm" p="md" withBorder>
-        <Title order={5} mb="sm">{t('patient.managingOrganization', 'Managing Organization')}</Title>
+        <Title order={5} mb="sm">{t('patient.managingOrganization')}</Title>
         {patient.managingOrganization ? (
           <Text size="sm" fw={500}>
             {patient.managingOrganization.display || patient.managingOrganization.reference}

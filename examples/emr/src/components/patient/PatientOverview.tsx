@@ -124,7 +124,7 @@ export function PatientOverview({ patient }: PatientOverviewProps): JSX.Element 
                   <Group justify="space-between">
                     <div>
                       <Text size="sm" fw={500}>
-                        {condition.code?.coding?.[0]?.display || condition.code?.text || 'Unknown'}
+                        {condition.code?.coding?.[0]?.display || condition.code?.text || t('common.unknown', 'Unknown')}
                       </Text>
                       {condition.onsetDateTime && (
                         <Text size="xs" c="dimmed">
@@ -167,7 +167,7 @@ export function PatientOverview({ patient }: PatientOverviewProps): JSX.Element 
                 {vitals.slice(0, 5).map((vital) => (
                   <Group key={vital.id} justify="space-between" p={2} gap={2}>
                     <Text size="xs" style={{ lineHeight: 1.2 }}>
-                      {vital.code?.coding?.[0]?.display || vital.code?.text}
+                      {vital.code?.coding?.[0]?.display || vital.code?.text || t('common.unknown', 'Unknown')}
                     </Text>
                     <Group gap={2}>
                       {vital.valueQuantity && (
@@ -250,12 +250,12 @@ export function PatientOverview({ patient }: PatientOverviewProps): JSX.Element 
                   <Accordion.Item key={sr.id} value={sr.id || ''}>
                     <Accordion.Control>
                       <Group gap="xs">
-                        <Badge size="xs" color={isLab ? 'blue' : 'grape'}>{categoryLabel}</Badge>
-                        <Badge size="xs" color={statusColor} variant="light">{sr.status}</Badge>
+                        <Badge size="xs" color={isLab ? 'blue' : 'grape'}>{t(`orders.${isLab ? 'lab' : 'imaging'}`)}</Badge>
+                        <Badge size="xs" color={statusColor} variant="light">{t(`orders.status.${sr.status}`, sr.status)}</Badge>
                         {sr.priority && sr.priority !== 'routine' && (
                           <Badge color="red" variant="filled" size="xs">{sr.priority.toUpperCase()}</Badge>
                         )}
-                        <Text size="sm" fw={500}>{sr.code?.coding?.[0]?.display || sr.code?.text || 'Order'}</Text>
+                        <Text size="sm" fw={500}>{sr.code?.coding?.[0]?.display || sr.code?.text || t('orders.orderDiagnostic', 'Order')}</Text>
                         {sr.authoredOn && (
                           <Text size="xs" c="dimmed">{t('patientOverview.ordered')}: {formatDate(sr.authoredOn)}</Text>
                         )}
@@ -266,7 +266,7 @@ export function PatientOverview({ patient }: PatientOverviewProps): JSX.Element 
                         <Stack gap="xs">
                           {results.map((obs, idx) => (
                             <Group key={idx} gap="xs">
-                              <Text fw={500}>{obs.code?.text}</Text>
+                              <Text fw={500}>{obs.code?.text || t('common.unknown', 'Unknown')}</Text>
                               {obs.valueQuantity && (
                                 <Text>{obs.valueQuantity.value} {obs.valueQuantity.unit}</Text>
                               )}
@@ -274,7 +274,7 @@ export function PatientOverview({ patient }: PatientOverviewProps): JSX.Element 
                                 <Text>{obs.valueString}</Text>
                               )}
                               {obs.valueBoolean !== undefined && (
-                                <Text>{obs.valueBoolean ? 'Yes' : 'No'}</Text>
+                                <Text>{obs.valueBoolean ? t('common.yes', 'Yes') : t('common.no', 'No')}</Text>
                               )}
                               {obs.valueCodeableConcept && (
                                 <Text>{obs.valueCodeableConcept.text}</Text>

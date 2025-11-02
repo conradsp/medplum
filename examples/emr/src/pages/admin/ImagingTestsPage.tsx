@@ -3,13 +3,15 @@ import { Container, Title, Button, Table, Group, Stack, Text, Badge } from '@man
 import { IconPlus, IconRefresh, IconEdit, IconTrash } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
 import { ActivityDefinition } from '@medplum/fhirtypes';
-import { notifications } from '@mantine/notifications';
+import { useTranslation } from 'react-i18next';
 import { getImagingTests, initializeDefaultImagingTests, deleteImagingTest } from '../../utils/imagingTests';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { EditImagingTestModal } from '../../components/admin/EditImagingTestModal';
 import { getPriceFromResource } from '../../utils/billing';
+import { showSuccess, handleError } from '../../utils/errorHandling';
 
 export function ImagingTestsPage(): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const [imagingTests, setImagingTests] = useState<ActivityDefinition[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,18 +32,10 @@ export function ImagingTestsPage(): JSX.Element {
   const handleInitializeDefaults = async (): Promise<void> => {
     try {
       await initializeDefaultImagingTests(medplum);
-      notifications.show({
-        title: 'Success',
-        message: 'Default imaging tests initialized successfully',
-        color: 'green',
-      });
+      showSuccess(t('admin.imagingTests.initializeSuccess'));
       await loadImagingTests();
-    } catch (_error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to initialize default imaging tests',
-        color: 'red',
-      });
+    } catch (error) {
+      handleError(error, t('message.error.initialize'));
     }
   };
 
@@ -59,21 +53,13 @@ export function ImagingTestsPage(): JSX.Element {
     if (!test.identifier?.[0]?.value) {
       return;
     }
-    if (window.confirm(`Are you sure you want to delete "${test.title}"?`)) {
+    if (window.confirm(t('admin.imagingTests.confirmDelete', { name: test.title }))) {
       try {
         await deleteImagingTest(medplum, test.identifier[0].value);
-        notifications.show({
-          title: 'Success',
-          message: 'Imaging test deleted successfully',
-          color: 'green',
-        });
+        showSuccess(t('admin.imagingTests.deleteSuccess'));
         await loadImagingTests();
-      } catch (_error) {
-        notifications.show({
-          title: 'Error',
-          message: 'Failed to delete imaging test',
-          color: 'red',
-        });
+      } catch (error) {
+        handleError(error, t('message.error.delete'));
       }
     }
   };
@@ -88,17 +74,17 @@ export function ImagingTestsPage(): JSX.Element {
 
   const getCategory = (test: ActivityDefinition): string => {
     const categoryExt = test.extension?.find(e => e.url === 'category');
-    return categoryExt?.valueString || 'Uncategorized';
+    return categoryExt?.valueString || t('admin.imagingTests.uncategorized');
   };
 
   const getBodyPart = (test: ActivityDefinition): string => {
     const bodyPartExt = test.extension?.find(e => e.url === 'bodyPart');
-    return bodyPartExt?.valueString || 'N/A';
+    return bodyPartExt?.valueString || t('common.na');
   };
 
   const getModality = (test: ActivityDefinition): string => {
     const modalityExt = test.extension?.find(e => e.url === 'modality');
-    return modalityExt?.valueString || 'N/A';
+    return modalityExt?.valueString || t('common.na');
   };
 
   // Group tests by category
@@ -113,12 +99,12 @@ export function ImagingTestsPage(): JSX.Element {
 
   let content: JSX.Element;
   if (loading) {
-    content = <Text>Loading...</Text>;
+    content = <Text>{t('common.loading')}</Text>;
   } else if (imagingTests.length === 0) {
     content = (
       <Stack align="center" py="xl">
-        <Text c="dimmed">No imaging tests configured</Text>
-        <Button onClick={handleInitializeDefaults}>Initialize Default Imaging Tests</Button>
+        <Text c="dimmed">{t('admin.imagingTests.noTests')}</Text>
+        <Button onClick={handleInitializeDefaults}>{t('admin.imagingTests.initializeDefaults')}</Button>
       </Stack>
     );
   } else {
@@ -133,13 +119,13 @@ export function ImagingTestsPage(): JSX.Element {
             <Table striped highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th>Test Name</Table.Th>
-                  <Table.Th>LOINC Code</Table.Th>
-                  <Table.Th>Body Part</Table.Th>
-                  <Table.Th>Modality</Table.Th>
-                  <Table.Th>Price</Table.Th>
-                  <Table.Th>Description</Table.Th>
-                  <Table.Th style={{ width: '80px' }}>Actions</Table.Th>
+                  <Table.Th>{t('admin.imagingTests.testName')}</Table.Th>
+                  <Table.Th>{t('admin.imagingTests.loincCode')}</Table.Th>
+                  <Table.Th>{t('admin.imagingTests.bodyPart')}</Table.Th>
+                  <Table.Th>{t('admin.imagingTests.modality')}</Table.Th>
+                  <Table.Th>{t('common.price')}</Table.Th>
+                  <Table.Th>{t('common.description')}</Table.Th>
+                  <Table.Th style={{ width: '80px' }}>{t('common.action')}</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -150,7 +136,7 @@ export function ImagingTestsPage(): JSX.Element {
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm" c="dimmed">
-                        {test.code?.coding?.[0]?.code || 'N/A'}
+                        {test.code?.coding?.[0]?.code || t('common.na')}
                       </Text>
                     </Table.Td>
                     <Table.Td>
@@ -166,7 +152,7 @@ export function ImagingTestsPage(): JSX.Element {
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm" c="dimmed" lineClamp={1}>
-                        {test.description || '—'}
+                        {test.description || t('common.dash')}
                       </Text>
                     </Table.Td>
                     <Table.Td>
@@ -178,7 +164,7 @@ export function ImagingTestsPage(): JSX.Element {
                           color="blue"
                           onClick={() => handleEdit(test)}
                         >
-                          Edit
+                          {t('common.edit')}
                         </Button>
                         <Button
                           size="xs"
@@ -187,7 +173,7 @@ export function ImagingTestsPage(): JSX.Element {
                           color="red"
                           onClick={() => handleDelete(test)}
                         >
-                          Delete
+                          {t('common.delete')}
                         </Button>
                       </div>
                     </Table.Td>
@@ -206,15 +192,15 @@ export function ImagingTestsPage(): JSX.Element {
       <BreadcrumbNav />
       <Group justify="space-between" mb="xl">
         <div>
-          <Title order={2}>Imaging Tests Catalog</Title>
-          <Text c="dimmed" size="sm">Manage available imaging studies</Text>
+          <Title order={2}>{t('admin.imagingTests.title')}</Title>
+          <Text c="dimmed" size="sm">{t('admin.imagingTests.subtitle')}</Text>
         </div>
         <Group>
           <Button leftSection={<IconRefresh size={16} />} variant="light" onClick={handleInitializeDefaults}>
-            Initialize Defaults
+            {t('admin.imagingTests.initializeDefaults')}
           </Button>
           <Button leftSection={<IconPlus size={16} />} onClick={handleCreate}>
-            Add Imaging Test
+            {t('admin.imagingTests.add')}
           </Button>
         </Group>
       </Group>

@@ -1,9 +1,10 @@
 import { Modal, Button, Group, Stack, Select } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
 import { Patient, Practitioner } from '@medplum/fhirtypes';
 import { useMedplum, Loading, useSearchResources } from '@medplum/react';
 import { IconStethoscope } from '@tabler/icons-react';
 import { JSX, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { showSuccess, handleError } from '../../utils/errorHandling';
 
 interface AddPractitionerModalProps {
   opened: boolean;
@@ -13,6 +14,7 @@ interface AddPractitionerModalProps {
 }
 
 export function AddPractitionerModal({ opened, onClose, patient, onSuccess }: AddPractitionerModalProps): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
   const [selectedPractitionerId, setSelectedPractitionerId] = useState<string | null>(null);
@@ -27,11 +29,7 @@ export function AddPractitionerModal({ opened, onClose, patient, onSuccess }: Ad
     e.preventDefault();
     
     if (!selectedPractitionerId) {
-      notifications.show({
-        title: 'Error',
-        message: 'Please select a practitioner',
-        color: 'red',
-      });
+      handleError(new Error(t('patient.selectPractitioner')), t('modal.validationError'));
       return;
     }
 
@@ -41,7 +39,7 @@ export function AddPractitionerModal({ opened, onClose, patient, onSuccess }: Ad
       const selectedPractitioner = practitioners?.find(p => p.id === selectedPractitionerId);
       
       if (!selectedPractitioner) {
-        throw new Error('Practitioner not found');
+        throw new Error(t('patient.practitionerNotFound'));
       }
 
       // Update patient with general practitioner
@@ -61,21 +59,13 @@ export function AddPractitionerModal({ opened, onClose, patient, onSuccess }: Ad
       await medplum.updateResource(updatedPatient);
       
       setSelectedPractitionerId(null);
-      notifications.show({
-        title: 'Success',
-        message: 'General practitioner assigned successfully!',
-        color: 'green',
-      });
+      showSuccess(t('patient.practitionerSuccess'));
       onClose();
       if (onSuccess) {
         onSuccess();
       }
     } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to assign practitioner. Please try again.',
-        color: 'red',
-      });
+      handleError(error, t('patient.practitionerError'));
     } finally {
       setLoading(false);
     }
@@ -85,19 +75,19 @@ export function AddPractitionerModal({ opened, onClose, patient, onSuccess }: Ad
     value: p.id || '',
     label: p.name?.[0]?.text || 
            [p.name?.[0]?.given?.[0], p.name?.[0]?.family].filter(Boolean).join(' ') || 
-           'Unknown Practitioner',
+           t('common.unknown'),
   })) || [];
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Assign General Practitioner" centered>
+    <Modal opened={opened} onClose={onClose} title={t('patient.assignPractitioner')} centered>
       <form onSubmit={handleSubmit}>
         <Stack>
           {practitionersLoading ? (
             <Loading />
           ) : (
             <Select
-              label="Select Practitioner"
-              placeholder="Choose a practitioner"
+              label={t('patient.selectPractitioner')}
+              placeholder={t('patient.choosePractitioner')}
               required
               data={practitionerOptions}
               value={selectedPractitionerId}
@@ -108,7 +98,7 @@ export function AddPractitionerModal({ opened, onClose, patient, onSuccess }: Ad
 
           <Group justify="flex-end" mt="md">
             <Button variant="default" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button 
               type="submit" 
@@ -116,7 +106,7 @@ export function AddPractitionerModal({ opened, onClose, patient, onSuccess }: Ad
               leftSection={<IconStethoscope size={16} />}
               disabled={!selectedPractitionerId}
             >
-              Assign Practitioner
+              {t('patient.assignButton')}
             </Button>
           </Group>
         </Stack>

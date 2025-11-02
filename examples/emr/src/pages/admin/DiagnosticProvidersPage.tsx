@@ -3,12 +3,14 @@ import { Container, Title, Button, Table, Group, Stack, Text, Badge, ActionIcon,
 import { IconPlus, IconRefresh, IconDots, IconEdit, IconTrash } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
 import { Organization } from '@medplum/fhirtypes';
-import { notifications } from '@mantine/notifications';
+import { useTranslation } from 'react-i18next';
+import { handleError, showSuccess } from '../../utils/errorHandling';
 import { getDiagnosticProviders, initializeDefaultDiagnosticProviders, deleteDiagnosticProvider } from '../../utils/diagnosticProviders';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { EditDiagnosticProviderModal } from '../../components/admin/EditDiagnosticProviderModal';
 
 export function DiagnosticProvidersPage(): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const [providers, setProviders] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,18 +31,10 @@ export function DiagnosticProvidersPage(): JSX.Element {
   const handleInitializeDefaults = async () => {
     try {
       await initializeDefaultDiagnosticProviders(medplum);
-      notifications.show({
-        title: 'Success',
-        message: 'Default diagnostic providers initialized successfully',
-        color: 'green',
-      });
+      showSuccess(t('admin.diagnosticProviders.initializeSuccess'));
       await loadProviders();
     } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to initialize default providers',
-        color: 'red',
-      });
+      handleError(error, t('admin.diagnosticProviders.initializeError'));
     }
   };
 
@@ -59,21 +53,13 @@ export function DiagnosticProvidersPage(): JSX.Element {
       return;
     }
 
-    if (window.confirm(`Are you sure you want to delete "${provider.name}"?`)) {
+    if (window.confirm(t('admin.diagnosticProviders.deleteConfirm', { name: provider.name }))) {
       try {
         await deleteDiagnosticProvider(medplum, provider.identifier[0].value);
-        notifications.show({
-          title: 'Success',
-          message: 'Diagnostic provider deleted successfully',
-          color: 'green',
-        });
+        showSuccess(t('admin.diagnosticProviders.deleteSuccess'));
         await loadProviders();
       } catch (error) {
-        notifications.show({
-          title: 'Error',
-          message: 'Failed to delete provider',
-          color: 'red',
-        });
+        handleError(error, t('admin.diagnosticProviders.deleteError'));
       }
     }
   };
@@ -107,13 +93,13 @@ export function DiagnosticProvidersPage(): JSX.Element {
   const getProviderTypeLabel = (type: string): string => {
     switch (type) {
       case 'lab':
-        return 'Laboratory';
+        return t('admin.diagnosticProviders.types.lab');
       case 'imaging':
-        return 'Imaging';
+        return t('admin.diagnosticProviders.types.imaging');
       case 'both':
-        return 'Lab & Imaging';
+        return t('admin.diagnosticProviders.types.both');
       default:
-        return 'Unknown';
+        return t('admin.diagnosticProviders.types.unknown');
     }
   };
 
@@ -123,8 +109,8 @@ export function DiagnosticProvidersPage(): JSX.Element {
       
       <Group justify="space-between" mb="xl">
         <div>
-          <Title order={2}>Diagnostic Providers</Title>
-          <Text c="dimmed" size="sm">Manage laboratory and imaging service providers</Text>
+          <Title order={2}>{t('admin.diagnosticProviders.title')}</Title>
+          <Text c="dimmed" size="sm">{t('admin.diagnosticProviders.subtitle')}</Text>
         </div>
         <Group>
           <Button
@@ -132,34 +118,34 @@ export function DiagnosticProvidersPage(): JSX.Element {
             variant="light"
             onClick={handleInitializeDefaults}
           >
-            Initialize Defaults
+            {t('admin.diagnosticProviders.initializeDefaults')}
           </Button>
           <Button
             leftSection={<IconPlus size={16} />}
             onClick={handleCreate}
           >
-            Add Provider
+            {t('admin.diagnosticProviders.add')}
           </Button>
         </Group>
       </Group>
 
       {loading ? (
-        <Text>Loading...</Text>
+        <Text>{t('common.loading')}</Text>
       ) : providers.length === 0 ? (
         <Stack align="center" py="xl">
-          <Text c="dimmed">No diagnostic providers configured</Text>
-          <Button onClick={handleInitializeDefaults}>Initialize Default Providers</Button>
+          <Text c="dimmed">{t('admin.diagnosticProviders.noProviders')}</Text>
+          <Button onClick={handleInitializeDefaults}>{t('admin.diagnosticProviders.initializeDefaultProviders')}</Button>
         </Stack>
       ) : (
         <Table striped highlightOnHover>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Provider Name</Table.Th>
-              <Table.Th>Type</Table.Th>
-              <Table.Th>Phone</Table.Th>
-              <Table.Th>Website</Table.Th>
-              <Table.Th>Status</Table.Th>
-              <Table.Th style={{ width: '80px' }}>Actions</Table.Th>
+              <Table.Th>{t('admin.diagnosticProviders.providerName')}</Table.Th>
+              <Table.Th>{t('admin.diagnosticProviders.type')}</Table.Th>
+              <Table.Th>{t('admin.diagnosticProviders.phone')}</Table.Th>
+              <Table.Th>{t('admin.diagnosticProviders.website')}</Table.Th>
+              <Table.Th>{t('admin.diagnosticProviders.status')}</Table.Th>
+              <Table.Th style={{ width: '80px' }}>{t('admin.diagnosticProviders.actions')}</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -179,7 +165,7 @@ export function DiagnosticProvidersPage(): JSX.Element {
                     </Badge>
                   </Table.Td>
                   <Table.Td>
-                    <Text size="sm">{phone || '—'}</Text>
+                    <Text size="sm">{phone || t('common.dash')}</Text>
                   </Table.Td>
                   <Table.Td>
                     {website ? (
@@ -187,12 +173,12 @@ export function DiagnosticProvidersPage(): JSX.Element {
                         {website.replace(/^https?:\/\//, '')}
                       </Text>
                     ) : (
-                      <Text size="sm">—</Text>
+                      <Text size="sm">{t('common.dash')}</Text>
                     )}
                   </Table.Td>
                   <Table.Td>
                     <Badge color={provider.active ? 'green' : 'red'}>
-                      {provider.active ? 'Active' : 'Inactive'}
+                      {provider.active ? t('admin.diagnosticProviders.active') : t('admin.diagnosticProviders.inactive')}
                     </Badge>
                   </Table.Td>
                   <Table.Td>
@@ -207,14 +193,14 @@ export function DiagnosticProvidersPage(): JSX.Element {
                           leftSection={<IconEdit size={14} />}
                           onClick={() => handleEdit(provider)}
                         >
-                          Edit
+                          {t('admin.diagnosticProviders.edit')}
                         </Menu.Item>
                         <Menu.Item
                           leftSection={<IconTrash size={14} />}
                           color="red"
                           onClick={() => handleDelete(provider)}
                         >
-                          Delete
+                          {t('admin.diagnosticProviders.delete')}
                         </Menu.Item>
                       </Menu.Dropdown>
                     </Menu>

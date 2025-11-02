@@ -2,9 +2,10 @@ import { JSX, useState, useEffect } from 'react';
 import { Modal, TextInput, Textarea, Button, Group, Stack, Select, NumberInput } from '@mantine/core';
 import { useMedplum } from '@medplum/react';
 import { ActivityDefinition } from '@medplum/fhirtypes';
-import { notifications } from '@mantine/notifications';
+import { useTranslation } from 'react-i18next';
 import { saveImagingTest, ImagingTestDefinition } from '../../utils/imagingTests';
 import { getPriceFromResource } from '../../utils/billing';
+import { showSuccess, handleError } from '../../utils/errorHandling';
 
 interface EditImagingTestModalProps {
   opened: boolean;
@@ -59,6 +60,7 @@ const BODY_PARTS = [
 ];
 
 export function EditImagingTestModal({ opened, onClose, test }: EditImagingTestModalProps): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
   
@@ -97,20 +99,12 @@ export function EditImagingTestModal({ opened, onClose, test }: EditImagingTestM
 
   const handleSave = async () => {
     if (!display.trim()) {
-      notifications.show({
-        title: 'Validation Error',
-        message: 'Test name is required',
-        color: 'red',
-      });
+      handleError(new Error(t('admin.imagingTests.validation.nameRequired')), t('modal.validationError'));
       return;
     }
 
     if (!code.trim()) {
-      notifications.show({
-        title: 'Validation Error',
-        message: 'Test code is required',
-        color: 'red',
-      });
+      handleError(new Error(t('admin.imagingTests.validation.codeRequired')), t('modal.validationError'));
       return;
     }
 
@@ -129,18 +123,10 @@ export function EditImagingTestModal({ opened, onClose, test }: EditImagingTestM
 
       await saveImagingTest(medplum, testDef);
       
-      notifications.show({
-        title: 'Success',
-        message: test ? 'Imaging test updated successfully' : 'Imaging test created successfully',
-        color: 'green',
-      });
+      showSuccess(test ? t('admin.imagingTests.updateSuccess') : t('admin.imagingTests.createSuccess'));
       onClose(true);
     } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to save imaging test',
-        color: 'red',
-      });
+      handleError(error, t('message.error.save'));
     } finally {
       setLoading(false);
     }
@@ -150,71 +136,71 @@ export function EditImagingTestModal({ opened, onClose, test }: EditImagingTestM
     <Modal
       opened={opened}
       onClose={() => onClose(false)}
-      title={test ? 'Edit Imaging Test' : 'Add Imaging Test'}
+      title={test ? t('admin.imagingTests.edit') : t('admin.imagingTests.add')}
       size="lg"
     >
       <Stack gap="md">
         <TextInput
-          label="Test Code"
-          placeholder="e.g., ct-head-wo, mri-brain-w"
+          label={t('admin.imagingTests.testCode')}
+          placeholder={t('admin.imagingTests.testCodePlaceholder')}
           value={code}
           onChange={(e) => setCode(e.currentTarget.value)}
           required
           disabled={!!test}
-          description={test ? 'Cannot change code of existing test' : 'Unique identifier for this test'}
+          description={test ? t('admin.imagingTests.codeDisabled') : t('admin.imagingTests.codeDescription')}
         />
 
         <TextInput
-          label="Test Name"
-          placeholder="e.g., CT Head without Contrast"
+          label={t('admin.imagingTests.testName')}
+          placeholder={t('admin.imagingTests.testNamePlaceholder')}
           value={display}
           onChange={(e) => setDisplay(e.currentTarget.value)}
           required
         />
 
         <TextInput
-          label="LOINC Code"
-          placeholder="e.g., 82692-5"
+          label={t('admin.imagingTests.loincCode')}
+          placeholder={t('admin.imagingTests.loincCodePlaceholder')}
           value={loincCode}
           onChange={(e) => setLoincCode(e.currentTarget.value)}
-          description="Optional LOINC code for standard identification"
+          description={t('admin.imagingTests.loincDescription')}
         />
 
         <Select
-          label="Category"
-          placeholder="Select category"
-          data={CATEGORIES}
+          label={t('admin.imagingTests.category')}
+          placeholder={t('admin.imagingTests.selectCategory')}
+          data={CATEGORIES.map(cat => ({ value: cat, label: t(`admin.imagingTests.categories.${cat.toLowerCase().replace(/[\s-]/g, '')}`) }))}
           value={category}
           onChange={setCategory}
           required
         />
 
         <Select
-          label="Body Part"
-          placeholder="Select body part"
-          data={BODY_PARTS}
+          label={t('admin.imagingTests.bodyPart')}
+          placeholder={t('admin.imagingTests.selectBodyPart')}
+          data={BODY_PARTS.map(part => ({ value: part, label: t(`admin.imagingTests.bodyParts.${part.toLowerCase().replace(/\s+/g, '')}`) }))}
           value={bodyPart}
           onChange={setBodyPart}
         />
 
         <Select
-          label="Modality"
-          placeholder="Select modality"
-          data={MODALITIES}
+          label={t('admin.imagingTests.modality')}
+          placeholder={t('admin.imagingTests.selectModality')}
+          data={MODALITIES.map(m => ({ value: m.value, label: t(`admin.imagingTests.modalities.${m.value.toLowerCase()}`) }))}
           value={modality}
           onChange={setModality}
         />
 
         <Textarea
-          label="Description"
-          placeholder="Brief description of the imaging study"
+          label={t('common.description')}
+          placeholder={t('admin.imagingTests.descriptionPlaceholder')}
           value={description}
           onChange={(e) => setDescription(e.currentTarget.value)}
           rows={3}
         />
 
         <NumberInput
-          label="Price ($)"
+          label={t('common.price')}
           value={price}
           onChange={(value) => setPrice(Number(value) || 0)}
           min={0}
@@ -225,10 +211,10 @@ export function EditImagingTestModal({ opened, onClose, test }: EditImagingTestM
 
         <Group justify="flex-end" mt="md">
           <Button variant="subtle" onClick={() => onClose(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSave} loading={loading}>
-            {test ? 'Update' : 'Create'}
+            {test ? t('common.update') : t('common.create')}
           </Button>
         </Group>
       </Stack>

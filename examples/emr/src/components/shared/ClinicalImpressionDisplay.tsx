@@ -4,12 +4,14 @@ import { Patient } from '@medplum/fhirtypes';
 import { Loading, NoteDisplay, useSearchResources } from '@medplum/react';
 import { IconFileText } from '@tabler/icons-react';
 import { JSX } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ClinicalImpressionDisplayProps {
   readonly patient: Patient;
 }
 
 export function ClinicalImpressionDisplay({ patient }: ClinicalImpressionDisplayProps): JSX.Element {
+  const { t } = useTranslation();
   const [impressions] = useSearchResources('ClinicalImpression', { patient: getReferenceString(patient) });
 
   if (!impressions) {
@@ -20,10 +22,10 @@ export function ClinicalImpressionDisplay({ patient }: ClinicalImpressionDisplay
     <Paper shadow="sm" p="md" radius="md" withBorder>
       <Title order={4} mb="md">
         <IconFileText size={20} style={{ display: 'inline', marginRight: '8px' }} />
-        Clinical Notes
+        {t('clinicalNotes.title', 'Clinical Notes')}
       </Title>
       {impressions.length === 0 ? (
-        <Blockquote color="dark">No Notes</Blockquote>
+        <Blockquote color="dark">{t('clinicalNotes.none', 'No Notes')}</Blockquote>
       ) : (
         <Stack>
           {impressions.map((impression, idx) => (

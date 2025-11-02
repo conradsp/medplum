@@ -6,6 +6,7 @@ import { IconMenu2, IconChartLine } from '@tabler/icons-react';
 import { JSX, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { logger } from '../../utils/logger';
+import { useTranslation } from 'react-i18next';
 
 interface PatientObservationsProps {
   patient: Patient;
@@ -36,14 +37,15 @@ const bmiCoding: Coding = {
 };
 
 export function PatientObservations({ patient }: PatientObservationsProps): JSX.Element {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const tabs = [
-    ['all', 'All Observations'],
-    ['height', 'Height'],
-    ['weight', 'Weight'],
-    ['blood-pressure', 'Blood Pressure'],
-    ['bmi', 'BMI'],
+    ['all', t('observationsTab.all', 'All Observations')],
+    ['height', t('observationsTab.height', 'Height')],
+    ['weight', t('observationsTab.weight', 'Weight')],
+    ['blood-pressure', t('observationsTab.bloodPressure', 'Blood Pressure')],
+    ['bmi', t('observationsTab.bmi', 'BMI')],
   ];
   const [currentTab, setCurrentTab] = useState<string[]>(tabs[0]);
 
@@ -57,7 +59,7 @@ export function PatientObservations({ patient }: PatientObservationsProps): JSX.
     <Paper shadow="sm" p="md" radius="md" withBorder>
       <Title order={4} mb="md">
         <IconChartLine size={20} style={{ display: 'inline', marginRight: '8px' }} />
-        Observations
+        {t('observationsTab.title', 'Observations')}
       </Title>
       <Menu>
         <Menu.Target>
@@ -118,6 +120,7 @@ interface ObservationListProps {
 }
 
 function ObservationList({ code, patient }: ObservationListProps): JSX.Element {
-  return <div>Observation list for {code.display}</div>;
+  const { t } = useTranslation();
+  return <div>{t('observationsTab.listFor', 'Observation list for {{type}}', { type: t(`observationsTab.${code.display}`, code.display) })}</div>;
 }
 

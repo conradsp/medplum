@@ -1,10 +1,10 @@
 import { Modal, TextInput, Button, Group, Stack, Textarea, NumberInput, ColorInput } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
 import { useMedplum } from '@medplum/react';
 import { IconCheck } from '@tabler/icons-react';
 import { JSX, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AppointmentTypeDefinition, saveAppointmentType } from '../../utils/appointmentTypes';
-import { getPriceFromResource } from '../../utils/billing';
+import { showSuccess, handleError } from '../../utils/errorHandling';
 
 interface EditAppointmentTypeModalProps {
   opened: boolean;
@@ -17,6 +17,7 @@ export function EditAppointmentTypeModal({
   onClose, 
   appointmentType 
 }: EditAppointmentTypeModalProps): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -56,18 +57,10 @@ export function EditAppointmentTypeModal({
 
     try {
       await saveAppointmentType(medplum, formData);
-      notifications.show({
-        title: 'Success',
-        message: 'Appointment type saved successfully!',
-        color: 'green',
-      });
+      showSuccess(t('message.success.saved'));
       onClose();
     } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to save appointment type. Please try again.',
-        color: 'red',
-      });
+      handleError(error, t('message.error.save'));
     } finally {
       setLoading(false);
     }
@@ -77,33 +70,33 @@ export function EditAppointmentTypeModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={appointmentType ? 'Edit Appointment Type' : 'Create Appointment Type'}
+      title={appointmentType ? t('admin.appointmentTypes.edit') : t('admin.appointmentTypes.create')}
       size="md"
       centered
     >
       <form onSubmit={handleSubmit}>
         <Stack>
           <TextInput
-            label="Code"
-            placeholder="new-patient"
+            label={t('admin.appointmentTypes.code')}
+            placeholder={t('admin.appointmentTypes.codePlaceholder')}
             required
             value={formData.code}
             onChange={(e) => setFormData({ ...formData, code: e.currentTarget.value.toLowerCase().replace(/\s+/g, '-') })}
-            description="Unique identifier (lowercase, use hyphens)"
-            disabled={!!appointmentType} // Can't change code after creation
+            description={appointmentType ? t('admin.appointmentTypes.codeDisabled') : t('admin.appointmentTypes.codeDescription')}
+            disabled={!!appointmentType}
           />
 
           <TextInput
-            label="Display Name"
-            placeholder="New Patient Visit"
+            label={t('admin.appointmentTypes.displayName')}
+            placeholder={t('admin.appointmentTypes.displayPlaceholder')}
             required
             value={formData.display}
             onChange={(e) => setFormData({ ...formData, display: e.currentTarget.value })}
           />
 
           <NumberInput
-            label="Duration (minutes)"
-            placeholder="30"
+            label={t('admin.appointmentTypes.duration')}
+            placeholder={t('admin.appointmentTypes.durationPlaceholder')}
             required
             min={5}
             max={480}
@@ -113,16 +106,16 @@ export function EditAppointmentTypeModal({
           />
 
           <Textarea
-            label="Description"
-            placeholder="Brief description of this appointment type"
+            label={t('common.description')}
+            placeholder={t('admin.appointmentTypes.descriptionPlaceholder')}
             rows={3}
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.currentTarget.value })}
           />
 
           <ColorInput
-            label="Calendar Color"
-            placeholder="Pick a color"
+            label={t('admin.appointmentTypes.color')}
+            placeholder={t('common.selectStatus')}
             value={formData.color}
             onChange={(value) => setFormData({ ...formData, color: value })}
             format="hex"
@@ -134,22 +127,22 @@ export function EditAppointmentTypeModal({
           />
 
           <NumberInput
-            label="Visit Fee ($)"
+            label={t('admin.appointmentTypes.visitFee')}
             value={formData.visitFee}
             onChange={(value) => setFormData({ ...formData, visitFee: Number(value) || 0 })}
             min={0}
             decimalScale={2}
             prefix="$"
             placeholder="0.00"
-            description="Fee charged for this type of visit"
+            description={t('billing.visitFee')}
           />
 
           <Group justify="flex-end" mt="md">
             <Button variant="default" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={loading} leftSection={<IconCheck size={16} />}>
-              Save Appointment Type
+              {t('common.save')}
             </Button>
           </Group>
         </Stack>

@@ -1,14 +1,16 @@
 import { Paper, Title, Text, Stack, Group, Button, Table, Badge, ActionIcon } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
 import { Questionnaire } from '@medplum/fhirtypes';
 import { Document, Loading, useMedplum } from '@medplum/react';
 import { IconPlus, IconEdit, IconTrash, IconFileText } from '@tabler/icons-react';
 import { JSX, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getNoteTemplates, initializeDefaultTemplates } from '../../utils/noteTemplates';
 import { EditNoteTemplateModal } from '../../components/admin/EditNoteTemplateModal';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
+import { showSuccess, handleError } from '../../utils/errorHandling';
 
 export function NoteTemplatesPage(): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const [templates, setTemplates] = useState<Questionnaire[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,17 +34,9 @@ export function NoteTemplatesPage(): JSX.Element {
     try {
       await initializeDefaultTemplates(medplum);
       await loadTemplates();
-      notifications.show({
-        title: 'Success',
-        message: 'Default templates initialized successfully!',
-        color: 'green',
-      });
+      showSuccess(t('admin.noteTemplates.initializeSuccess'));
     } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to initialize templates',
-        color: 'red',
-      });
+      handleError(error, t('message.error.initialize'));
     } finally {
       setInitializing(false);
     }
@@ -61,21 +55,13 @@ export function NoteTemplatesPage(): JSX.Element {
   const handleDelete = async (template: Questionnaire) => {
     if (!template.id) return;
     
-    if (confirm(`Are you sure you want to delete the template "${template.title}"?`)) {
+    if (confirm(t('admin.noteTemplates.confirmDelete', { name: template.title }))) {
       try {
         await medplum.deleteResource('Questionnaire', template.id);
         await loadTemplates();
-        notifications.show({
-          title: 'Success',
-          message: 'Template deleted successfully',
-          color: 'green',
-        });
+        showSuccess(t('admin.noteTemplates.deleteSuccess'));
       } catch (error) {
-        notifications.show({
-          title: 'Error',
-          message: 'Failed to delete template',
-          color: 'red',
-        });
+        handleError(error, t('message.error.delete'));
       }
     }
   };
@@ -102,11 +88,11 @@ export function NoteTemplatesPage(): JSX.Element {
             <Title order={2}>
               <Group gap="xs">
                 <IconFileText size={28} />
-                Clinical Note Templates
+                {t('admin.noteTemplates.title')}
               </Group>
             </Title>
             <Text size="sm" c="dimmed" mt="xs">
-              Manage templates for clinical documentation
+              {t('admin.noteTemplates.subtitle')}
             </Text>
           </div>
           <Group>
@@ -116,11 +102,11 @@ export function NoteTemplatesPage(): JSX.Element {
                 onClick={handleInitializeDefaults}
                 loading={initializing}
               >
-                Initialize Default Templates
+                {t('admin.noteTemplates.initializeDefaults')}
               </Button>
             )}
             <Button leftSection={<IconPlus size={16} />} onClick={handleNew}>
-              New Template
+              {t('admin.noteTemplates.new')}
             </Button>
           </Group>
         </Group>
@@ -133,17 +119,17 @@ export function NoteTemplatesPage(): JSX.Element {
               <IconFileText size={48} style={{ color: '#adb5bd' }} />
               <div style={{ textAlign: 'center' }}>
                 <Text size="lg" fw={500} mb="xs">
-                  No Templates Found
+                  {t('admin.noteTemplates.noTemplates')}
                 </Text>
                 <Text size="sm" c="dimmed" mb="md">
-                  Initialize the default template library to get started
+                  {t('admin.noteTemplates.noTemplatesDescription')}
                 </Text>
                 <Button
                   onClick={handleInitializeDefaults}
                   loading={initializing}
                   leftSection={<IconPlus size={16} />}
                 >
-                  Initialize Default Templates
+                  {t('admin.noteTemplates.initializeDefaults')}
                 </Button>
               </div>
             </Stack>
@@ -152,11 +138,11 @@ export function NoteTemplatesPage(): JSX.Element {
           <Table striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>Template Name</Table.Th>
-                <Table.Th>Description</Table.Th>
-                <Table.Th>Fields</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th>Actions</Table.Th>
+                <Table.Th>{t('admin.noteTemplates.name')}</Table.Th>
+                <Table.Th>{t('common.description')}</Table.Th>
+                <Table.Th>{t('admin.noteTemplates.fields')}</Table.Th>
+                <Table.Th>{t('common.status')}</Table.Th>
+                <Table.Th>{t('common.action')}</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -169,11 +155,11 @@ export function NoteTemplatesPage(): JSX.Element {
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed">
-                      {template.description || '-'}
+                      {template.description || t('common.dash')}
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    <Text size="sm">{template.item?.length || 0} fields</Text>
+                    <Text size="sm">{template.item?.length || 0} {t('admin.noteTemplates.fieldsCount')}</Text>
                   </Table.Td>
                   <Table.Td>
                     <Badge
@@ -181,7 +167,7 @@ export function NoteTemplatesPage(): JSX.Element {
                       variant="light"
                       size="sm"
                     >
-                      {template.status}
+                      {t(`admin.noteTemplates.status.${template.status}`)}
                     </Badge>
                   </Table.Td>
                   <Table.Td>

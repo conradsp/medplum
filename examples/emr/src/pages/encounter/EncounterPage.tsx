@@ -28,6 +28,7 @@ import { DetailsTab } from '../../components/encounter/tabs/DetailsTab';
 import { HistoryTab } from '../../components/encounter/tabs/HistoryTab';
 import { isVitalSign } from '../../utils/encounterUtils';
 import { getEncounterPrescriptions, getEncounterAdministrations } from '../../utils/medications';
+import { useTranslation } from 'react-i18next';
 
 interface EncounterPageProps {
   medplum: MedplumClient;
@@ -36,6 +37,7 @@ interface EncounterPageProps {
 }
 
 export function EncounterPage({ medplum, encounter, patient }: EncounterPageProps): JSX.Element {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [recordVitalsModalOpen, setRecordVitalsModalOpen] = useState(false);
   const [createNoteModalOpen, setCreateNoteModalOpen] = useState(false);
@@ -253,31 +255,31 @@ export function EncounterPage({ medplum, encounter, patient }: EncounterPageProp
           {/* Tabbed Content */}
           <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'overview')}>
             <Tabs.List>
-              <Tabs.Tab value="overview">Overview</Tabs.Tab>
+              <Tabs.Tab value="overview">{t('overview.tab', 'Overview')}</Tabs.Tab>
               <Tabs.Tab value="vitals">
-                Vitals {vitalsRecordingCount > 0 && `(${vitalsRecordingCount})`}
+                {t('vitals.tab', 'Vitals')} {vitalsRecordingCount > 0 && `(${vitalsRecordingCount})`}
               </Tabs.Tab>
               <Tabs.Tab value="observations">
-                Other Observations {nonVitalObservations && nonVitalObservations.length > 0 && `(${nonVitalObservations.length})`}
+                {t('otherObservations.tab', 'Other Observations')} {nonVitalObservations && nonVitalObservations.length > 0 && `(${nonVitalObservations.length})`}
               </Tabs.Tab>
               <Tabs.Tab value="orders">
-                Orders {serviceRequests && serviceRequests.length > 0 && `(${serviceRequests.length})`}
+                {t('orders.tab', 'Orders')} {serviceRequests && serviceRequests.length > 0 && `(${serviceRequests.length})`}
               </Tabs.Tab>
               <Tabs.Tab value="notes">
-                Notes {((documents?.length || 0) + (diagnosticReports?.length || 0)) > 0 && 
+                {t('notes.tab', 'Notes')} {((documents?.length || 0) + (diagnosticReports?.length || 0)) > 0 && 
                   `(${(documents?.length || 0) + (diagnosticReports?.length || 0)})`}
               </Tabs.Tab>
               <Tabs.Tab value="procedures">
-                Procedures {displayProcedures && displayProcedures.length > 0 && `(${displayProcedures.length})`}
+                {t('procedures.tab', 'Procedures')} {displayProcedures && displayProcedures.length > 0 && `(${displayProcedures.length})`}
               </Tabs.Tab>
               <Tabs.Tab value="conditions">
-                Diagnoses {displayConditions && displayConditions.length > 0 && `(${displayConditions.length})`}
+                {t('diagnoses.tab', 'Diagnoses')} {displayConditions && displayConditions.length > 0 && `(${displayConditions.length})`}
               </Tabs.Tab>
               <Tabs.Tab value="medications">
-                Medications {prescriptions && prescriptions.length > 0 && `(${prescriptions.length})`}
+                {t('medications.tab', 'Medications')} {prescriptions && prescriptions.length > 0 && `(${prescriptions.length})`}
               </Tabs.Tab>
-              <Tabs.Tab value="details">Details</Tabs.Tab>
-              <Tabs.Tab value="history">History</Tabs.Tab>
+              <Tabs.Tab value="details">{t('details.tab', 'Details')}</Tabs.Tab>
+              <Tabs.Tab value="history">{t('history.tab', 'History')}</Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="overview" pt="md">

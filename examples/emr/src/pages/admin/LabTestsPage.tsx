@@ -3,13 +3,15 @@ import { Container, Title, Button, Table, Group, Stack, Text, Badge } from '@man
 import { IconPlus, IconRefresh, IconEdit, IconTrash } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
 import { ActivityDefinition } from '@medplum/fhirtypes';
-import { notifications } from '@mantine/notifications';
+import { useTranslation } from 'react-i18next';
 import { getLabTests, initializeDefaultLabTests, deleteLabTest } from '../../utils/labTests';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { EditLabTestModal } from '../../components/admin/EditLabTestModal';
 import { getPriceFromResource } from '../../utils/billing';
+import { showSuccess, handleError } from '../../utils/errorHandling';
 
 export function LabTestsPage(): JSX.Element {
+  const { t } = useTranslation();
   const medplum = useMedplum();
   const [labTests, setLabTests] = useState<ActivityDefinition[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,18 +32,10 @@ export function LabTestsPage(): JSX.Element {
   const handleInitializeDefaults = async (): Promise<void> => {
     try {
       await initializeDefaultLabTests(medplum);
-      notifications.show({
-        title: 'Success',
-        message: 'Default lab tests initialized successfully',
-        color: 'green',
-      });
+      showSuccess(t('admin.labTests.initializeSuccess'));
       await loadLabTests();
-    } catch (_error) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to initialize default lab tests',
-        color: 'red',
-      });
+    } catch (error) {
+      handleError(error, t('message.error.initialize'));
     }
   };
 
@@ -59,21 +53,13 @@ export function LabTestsPage(): JSX.Element {
     if (!test.identifier?.[0]?.value) {
       return;
     }
-    if (window.confirm(`Are you sure you want to delete "${test.title}"?`)) {
+    if (window.confirm(t('admin.labTests.confirmDelete', { name: test.title }))) {
       try {
         await deleteLabTest(medplum, test.identifier[0].value);
-        notifications.show({
-          title: 'Success',
-          message: 'Lab test deleted successfully',
-          color: 'green',
-        });
+        showSuccess(t('admin.labTests.deleteSuccess'));
         await loadLabTests();
-      } catch (_error) {
-        notifications.show({
-          title: 'Error',
-          message: 'Failed to delete lab test',
-          color: 'red',
-        });
+      } catch (error) {
+        handleError(error, t('message.error.delete'));
       }
     }
   };
@@ -88,12 +74,12 @@ export function LabTestsPage(): JSX.Element {
 
   const getCategory = (test: ActivityDefinition): string => {
     const categoryExt = test.extension?.find(e => e.url === 'category');
-    return categoryExt?.valueString || 'Uncategorized';
+    return categoryExt?.valueString || t('admin.labTests.uncategorized');
   };
 
   const getSpecimenType = (test: ActivityDefinition): string => {
     const specimenExt = test.extension?.find(e => e.url === 'specimenType');
-    return specimenExt?.valueString || 'N/A';
+    return specimenExt?.valueString || t('common.na');
   };
 
   // Group tests by category
@@ -112,8 +98,8 @@ export function LabTestsPage(): JSX.Element {
       
       <Group justify="space-between" mb="xl">
         <div>
-          <Title order={2}>Lab Tests Catalog</Title>
-          <Text c="dimmed" size="sm">Manage available laboratory tests</Text>
+          <Title order={2}>{t('admin.labTests.title')}</Title>
+          <Text c="dimmed" size="sm">{t('admin.labTests.subtitle')}</Text>
         </div>
         <Group>
           <Button
@@ -121,22 +107,22 @@ export function LabTestsPage(): JSX.Element {
             variant="light"
             onClick={handleInitializeDefaults}
           >
-            Initialize Defaults
+            {t('admin.labTests.initializeDefaults')}
           </Button>
           <Button
             leftSection={<IconPlus size={16} />}
             onClick={handleCreate}
           >
-            Add Lab Test
+            {t('admin.labTests.add')}
           </Button>
         </Group>
       </Group>
 
-      {loading && <Text>Loading...</Text>}
+      {loading && <Text>{t('common.loading')}</Text>}
       {!loading && labTests.length === 0 && (
         <Stack align="center" py="xl">
-          <Text c="dimmed">No lab tests configured</Text>
-          <Button onClick={handleInitializeDefaults}>Initialize Default Lab Tests</Button>
+          <Text c="dimmed">{t('admin.labTests.noTests')}</Text>
+          <Button onClick={handleInitializeDefaults}>{t('admin.labTests.initializeDefaults')}</Button>
         </Stack>
       )}
       {!loading && labTests.length > 0 && (
@@ -150,12 +136,12 @@ export function LabTestsPage(): JSX.Element {
               <Table striped highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th>Test Name</Table.Th>
-                    <Table.Th>LOINC Code</Table.Th>
-                    <Table.Th>Specimen Type</Table.Th>
-                    <Table.Th>Price</Table.Th>
-                    <Table.Th>Description</Table.Th>
-                    <Table.Th style={{ width: '80px' }}>Actions</Table.Th>
+                    <Table.Th>{t('admin.labTests.testName')}</Table.Th>
+                    <Table.Th>{t('admin.labTests.loincCode')}</Table.Th>
+                    <Table.Th>{t('admin.labTests.specimenType')}</Table.Th>
+                    <Table.Th>{t('common.price')}</Table.Th>
+                    <Table.Th>{t('common.description')}</Table.Th>
+                    <Table.Th style={{ width: '80px' }}>{t('common.action')}</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -166,7 +152,7 @@ export function LabTestsPage(): JSX.Element {
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm" c="dimmed">
-                          {test.code?.coding?.[0]?.code || 'N/A'}
+                          {test.code?.coding?.[0]?.code || t('common.na')}
                         </Text>
                       </Table.Td>
                       <Table.Td>
@@ -179,7 +165,7 @@ export function LabTestsPage(): JSX.Element {
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm" c="dimmed" lineClamp={1}>
-                          {test.description || '—'}
+                          {test.description || t('common.dash')}
                         </Text>
                       </Table.Td>
                       <Table.Td>
@@ -191,7 +177,7 @@ export function LabTestsPage(): JSX.Element {
                             color="blue"
                             onClick={() => handleEdit(test)}
                           >
-                            Edit
+                            {t('common.edit')}
                           </Button>
                           <Button
                             size="xs"
@@ -200,7 +186,7 @@ export function LabTestsPage(): JSX.Element {
                             color="red"
                             onClick={() => handleDelete(test)}
                           >
-                            Delete
+                            {t('common.delete')}
                           </Button>
                         </div>
                       </Table.Td>
