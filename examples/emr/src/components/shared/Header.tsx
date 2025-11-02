@@ -7,9 +7,8 @@ import { useNavigate } from 'react-router';
 import { NewProviderModal } from '../admin/NewProviderModal';
 import { getEMRSettings } from '../../utils/settings';
 import { LanguageSelector } from './LanguageSelector';
-import { useTranslation } from 'react-i18next';
-import { useFeatureFlags } from '../../hooks/usePermissions';
-import { useAdminStatus } from '../../utils/admin';
+  import { useTranslation } from 'react-i18next';
+  import { useFeatureFlags } from '../../hooks/usePermissions';
 
 interface HeaderProps {
   onPatientSelect: (patient: Patient) => void;
@@ -26,7 +25,6 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
   const profile = medplum.getProfile();
   const { t } = useTranslation();
   const flags = useFeatureFlags();
-  const { isAdmin } = useAdminStatus();
 
 
   // Load EMR settings on mount and when settings change
@@ -195,7 +193,7 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
           )}
 
           {/* Admin Menu - Only shown for users with admin permissions */}
-          {(isAdmin || flags.canViewAdmin) && (
+          {flags.canViewAdmin && (
             <Menu>
               <Menu.Target>
                 <Button 

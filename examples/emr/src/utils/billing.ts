@@ -1,6 +1,7 @@
 // Billing utilities using FHIR ChargeItem and Account resources
 import { MedplumClient } from '@medplum/core';
 import { ChargeItem, Account, Reference } from '@medplum/fhirtypes';
+import { logger } from './logger';
 
 export interface ChargeItemSummary extends ChargeItem {
   description?: string;
@@ -260,7 +261,7 @@ export async function getEncounterCharges(
       };
     }) || []);
   } catch (error) {
-    console.error('Failed to fetch charges:', error);
+    logger.error('Failed to fetch charges', error);
     return [];
   }
 }
@@ -293,7 +294,7 @@ export async function getPatientCharges(
       };
     }) || []);
   } catch (error) {
-    console.error('Failed to fetch charges:', error);
+    logger.error('Failed to fetch charges', error);
     return [];
   }
 }

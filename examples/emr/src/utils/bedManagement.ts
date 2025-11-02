@@ -1,6 +1,7 @@
 // Utility functions for bed management using FHIR Location resources
 import { MedplumClient } from '@medplum/core';
 import { Location, Encounter } from '@medplum/fhirtypes';
+import { logger } from './logger';
 
 export type BedStatus = 'available' | 'occupied' | 'reserved' | 'maintenance' | 'contaminated' | 'housekeeping';
 export type BedType = 'standard' | 'icu' | 'isolation' | 'bariatric' | 'pediatric' | 'maternity';
@@ -37,7 +38,7 @@ export async function getDepartments(medplum: MedplumClient): Promise<Location[]
     });
     return result.entry?.map(e => e.resource as Location) || [];
   } catch (error) {
-    console.error('Failed to fetch departments:', error);
+    logger.error('Failed to fetch departments', error);
     return [];
   }
 }
@@ -131,7 +132,7 @@ export async function getBeds(medplum: MedplumClient): Promise<BedWithDepartment
     
     return bedsWithDepartments;
   } catch (error) {
-    console.error('Failed to fetch beds:', error);
+    logger.error('Failed to fetch beds', error);
     return [];
   }
 }
@@ -152,7 +153,7 @@ export async function getAvailableBeds(
     });
     return result.entry?.map(e => e.resource as Location) || [];
   } catch (error) {
-    console.error('Failed to fetch available beds:', error);
+    logger.error('Failed to fetch available beds', error);
     return [];
   }
 }
@@ -412,7 +413,7 @@ export async function getDepartmentBedStats(
     
     return { total, available, occupied };
   } catch (error) {
-    console.error('Failed to get bed stats:', error);
+    logger.error('Failed to get bed stats', error);
     return { total: 0, available: 0, occupied: 0 };
   }
 }

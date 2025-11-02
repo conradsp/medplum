@@ -2,6 +2,7 @@
 import { MedplumClient } from '@medplum/core';
 import { Medication, MedicationRequest, MedicationAdministration, MedicationKnowledge } from '@medplum/fhirtypes';
 import { DEFAULT_MEDICATIONS } from './defaultMedications';
+import { logger } from './logger';
 
 export interface MedicationInventory {
   medicationId: string;
@@ -43,7 +44,7 @@ export async function getMedications(medplum: MedplumClient): Promise<Medication
     });
     return result.entry?.map(e => e.resource as Medication) || [];
   } catch (error) {
-    console.error('Failed to fetch medications:', error);
+    logger.error('Failed to fetch medications', error);
     return [];
   }
 }
@@ -275,7 +276,7 @@ export async function getMedicationInventory(
     }
     return null;
   } catch (error) {
-    console.error('Failed to fetch inventory:', error);
+    logger.error('Failed to fetch inventory', error);
     return null;
   }
 }
@@ -423,7 +424,7 @@ export async function getEncounterPrescriptions(
     });
     return result.entry?.map(e => e.resource as MedicationRequest) || [];
   } catch (error) {
-    console.error('Failed to fetch prescriptions:', error);
+    logger.error('Failed to fetch prescriptions', error);
     return [];
   }
 }
@@ -445,7 +446,7 @@ export async function getEncounterAdministrations(
     });
     return result.entry?.map(e => e.resource as MedicationAdministration) || [];
   } catch (error) {
-    console.error('Failed to fetch administrations:', error);
+    logger.error('Failed to fetch administrations', error);
     return [];
   }
 }

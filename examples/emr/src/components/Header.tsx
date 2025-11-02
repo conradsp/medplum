@@ -23,8 +23,6 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
   const profile = medplum.getProfile();
   const isAdmin = isUserAdmin(profile);
 
-  console.log('Header render - isAdmin:', isAdmin);
-
   // Load EMR settings on mount
   useEffect(() => {
     const loadSettings = async () => {
