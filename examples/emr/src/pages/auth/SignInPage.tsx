@@ -64,7 +64,7 @@ export function SignInPage(): JSX.Element {
           onSuccess={() => {
             navigate('/');
           }}
-          onForgotPassword={() => {/* Forgot password */}}
+          onForgotPassword={() => navigate('/resetpassword')}
           onRegister={() => navigate('/register')}
         />
       </Paper>

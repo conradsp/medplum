@@ -4,6 +4,8 @@ import { Header } from './components/shared/Header';
 import { EncounterPageWrapper } from './components/encounter/EncounterPageWrapper';
 import { SignInPage } from './pages/auth/SignInPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
+import { SetPasswordPage } from './pages/auth/SetPasswordPage';
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { PatientPage } from './pages/patient/PatientPage';
 import { HomePage } from './pages/HomePage';
 import { ManageUsersPage } from './pages/admin/ManageUsersPage';
@@ -44,12 +46,16 @@ export function EMRApp(): JSX.Element {
   const profile = medplum.getProfile();
   const isAuthenticated = !!profile;
 
+  // Allow access to setpassword without authentication
+  const isSetPasswordRoute = location.pathname.startsWith('/setpassword/');
+  const isResetPasswordRoute = location.pathname === '/resetpassword';
+
   // If not authenticated and not on auth pages, redirect to sign in
-  if (!isAuthenticated && location.pathname !== '/signin' && location.pathname !== '/register') {
+  if (!isAuthenticated && location.pathname !== '/signin' && location.pathname !== '/register' && !isSetPasswordRoute && !isResetPasswordRoute) {
     return <Navigate to="/signin" replace />;
   }
 
-  // Show auth pages when on those routes
+  // Show auth pages when on those routes (except setpassword which is handled in Routes)
   if (location.pathname === '/signin') {
     return <SignInPage />;
   }
@@ -58,13 +64,19 @@ export function EMRApp(): JSX.Element {
     return <RegisterPage />;
   }
 
-  // Main authenticated app
+  if (isResetPasswordRoute) {
+    return <ResetPasswordPage />;
+  }
+
+  // Main authenticated app (and setpassword route)
   return (
     <div className={styles.appContainer}>
-      <Header onPatientSelect={p => { setPatient(p); }} />
+      {!isSetPasswordRoute && <Header onPatientSelect={p => { setPatient(p); }} />}
       <Routes>
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/resetpassword" element={<ResetPasswordPage />} />
+        <Route path="/setpassword/:id/:secret" element={<SetPasswordPage />} />
         <Route path="/patient/:id" element={<PatientPage />} />
         <Route path="/Encounter/:id" element={<EncounterPageWrapper />} />
         <Route
