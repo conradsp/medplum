@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { UserRole, ROLE_PERMISSIONS } from '../../utils/permissions';
 import { getUserRoles, setUserRoles } from '../../utils/permissionUtils';
 import { handleError, showSuccess } from '../../utils/errorHandling';
+import styles from './EditUserRolesModal.module.css';
 
 interface EditUserRolesModalProps {
   opened: boolean;
@@ -86,9 +87,9 @@ export function EditUserRolesModal({ opened, onClose, practitioner }: EditUserRo
 
         <Stack gap="sm">
           {Object.values(UserRole).map(role => (
-            <Paper key={role} p="md" withBorder style={{ cursor: 'pointer' }} onClick={() => handleRoleToggle(role)}>
+            <Paper key={role} p="md" withBorder className={styles.rolePaper} onClick={() => handleRoleToggle(role)}>
               <Group justify="space-between">
-                <div style={{ flex: 1 }}>
+                <div className={styles.roleContent}>
                   <Group gap="sm" mb="xs">
                     <Checkbox
                       checked={selectedRoles.includes(role)}

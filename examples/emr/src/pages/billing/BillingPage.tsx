@@ -13,6 +13,7 @@ import { BillingSearchSection } from '../../components/billing/BillingSearchSect
 import { BillingSummaryCard } from '../../components/billing/BillingSummaryCard';
 import { ChargesTable } from '../../components/billing/ChargesTable';
 import { PaymentsTable } from '../../components/billing/PaymentsTable';
+import styles from './BillingPage.module.css';
 
 export function BillingPage(): JSX.Element {
   const { t } = useTranslation();
@@ -186,7 +187,7 @@ export function BillingPage(): JSX.Element {
         encounterId={selectedEncounter?.id}
       />
 
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.billingPaper}>
         <Group justify="space-between" mb="lg">
           <Title order={2}>
             <Group gap="xs">

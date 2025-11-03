@@ -16,6 +16,7 @@ import {
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { handleError, showSuccess } from '../../utils/errorHandling';
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
+import styles from './DepartmentsPage.module.css';
 
 export function DepartmentsPage(): JSX.Element {
   const { t } = useTranslation();
@@ -217,7 +218,7 @@ export function DepartmentsPage(): JSX.Element {
         onCancel={handleDeleteCancel}
       />
 
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.actionsColumn}>
         <Group justify="space-between" mb="lg">
           <div>
             <Title order={2}>

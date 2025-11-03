@@ -1,6 +1,7 @@
 import { PatientTimeline as MedplumPatientTimeline } from '@medplum/react';
 import { Patient } from '@medplum/fhirtypes';
 import { JSX } from 'react';
+import styles from './PatientTimeline.module.css';
 
 // No user-facing strings to translate in PatientTimeline
 
@@ -10,7 +11,7 @@ interface PatientTimelineProps {
 
 export function PatientTimeline({ patient }: PatientTimelineProps): JSX.Element {
   return (
-    <div style={{ marginTop: '20px' }}>
+    <div className={styles.timelineContainer}>
       <MedplumPatientTimeline patient={patient} />
     </div>
   );

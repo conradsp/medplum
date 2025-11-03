@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { handleError, showSuccess } from '../../utils/errorHandling';
 import { getCurrentBedAssignment, releaseBedFromEncounter } from '../../utils/bedManagement';
 import { createBedCharge, getPriceFromResource } from '../../utils/billing';
+import styles from './EncounterHeader.module.css';
 
 interface EncounterHeaderProps {
   encounter: Encounter;
@@ -128,7 +129,7 @@ export function EncounterHeader({ encounter, medplum, onStatusChange }: Encounte
   };
 
   return (
-    <Paper shadow="sm" p="lg" mb="md" withBorder style={{ marginTop: 0 }}>
+    <Paper shadow="sm" p="lg" mb="md" withBorder className={styles.headerPaper}>
       <Group justify="space-between" mb="md">
         <div>
           <Title order={2}>{encounterType}</Title>

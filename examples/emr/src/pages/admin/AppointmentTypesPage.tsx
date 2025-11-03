@@ -12,6 +12,7 @@ import {
 import { EditAppointmentTypeModal } from '../../components/admin/EditAppointmentTypeModal';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { showSuccess, handleError } from '../../utils/errorHandling';
+import styles from './AppointmentTypesPage.module.css';
 
 export function AppointmentTypesPage(): JSX.Element {
   const { t } = useTranslation();
@@ -84,7 +85,7 @@ export function AppointmentTypesPage(): JSX.Element {
         appointmentType={selectedType}
       />
 
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.paper}>
         <Group justify="space-between" mb="lg">
           <div>
             <Title order={2}>
@@ -118,8 +119,8 @@ export function AppointmentTypesPage(): JSX.Element {
         ) : types.length === 0 ? (
           <Paper p="xl" withBorder bg="gray.0">
             <Stack align="center" gap="md">
-              <IconCalendar size={48} style={{ color: '#adb5bd' }} />
-              <div style={{ textAlign: 'center' }}>
+              <IconCalendar size={48} className={styles.emptyStateIcon} />
+              <div className={styles.emptyStateContainer}>
                 <Text size="lg" fw={500} mb="xs">
                   {t('admin.appointmentTypes.noTypes')}
                 </Text>
@@ -167,7 +168,7 @@ export function AppointmentTypesPage(): JSX.Element {
                   </Table.Td>
                   <Table.Td>
                     <Group gap="xs">
-                      <IconClock size={16} style={{ color: '#666' }} />
+                      <IconClock size={16} className={styles.iconColor} />
                       <Text size="sm">{type.duration} {t('common.minutes')}</Text>
                     </Group>
                   </Table.Td>

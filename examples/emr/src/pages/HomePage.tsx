@@ -6,6 +6,7 @@ import { JSX, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { NewPatientModal } from '../components/patient/NewPatientModal';
 import { useTranslation } from 'react-i18next';
+import styles from './HomePage.module.css';
 
 export function HomePage(): JSX.Element {
   const { t } = useTranslation();
@@ -26,7 +27,7 @@ export function HomePage(): JSX.Element {
   if (!patients || patients.length === 0) {
     return (
       <Document>
-        <Paper p="xl" withBorder style={{ marginTop: 0 }}>
+        <Paper p="xl" withBorder className={styles.paperTop}>
           <Stack align="center" gap="md">
             <IconUser size={48} color="#999" />
             <Title order={3} c="dimmed">{t('home.noPatientsFound')}</Title>
@@ -41,7 +42,7 @@ export function HomePage(): JSX.Element {
     <Document>
       <NewPatientModal opened={newPatientModalOpen} onClose={() => setNewPatientModalOpen(false)} />
       
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.paperTop}>
         <Group justify="space-between" mb="lg">
           <div>
             <Title order={2}>{t('home.patients', 'Patients')}</Title>
@@ -96,7 +97,7 @@ export function HomePage(): JSX.Element {
                 <Table.Tr
                   key={patient.id}
                   onClick={() => navigate(`/patient/${patient.id}`)}
-                  style={{ cursor: 'pointer' }}
+                  className={styles.clickableRow}
                 >
                   <Table.Td>
                     <Text size="sm" fw={500}>

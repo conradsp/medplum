@@ -5,6 +5,7 @@ import { Loading, useSearchResources } from '@medplum/react';
 import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import styles from './PatientEncounters.module.css';
 
 interface PatientEncountersProps {
   patient: Patient;
@@ -24,7 +25,7 @@ export function PatientEncounters({ patient }: PatientEncountersProps): JSX.Elem
 
   if (!encounters || encounters.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+      <div className={styles.emptyState}>
         {t('encounter.noneFound', 'No encounters found')}
       </div>
     );
@@ -57,7 +58,7 @@ export function PatientEncounters({ patient }: PatientEncountersProps): JSX.Elem
               <Table.Tr 
                 key={encounter.id}
                 onClick={() => navigate(`/Encounter/${encounter.id}`)}
-                style={{ cursor: 'pointer' }}
+                className={styles.clickableRow}
               >
                 <Table.Td>
                   <Text size="sm">

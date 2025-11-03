@@ -7,6 +7,7 @@ import { JSX, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
+import styles from './PatientObservations.module.css';
 
 interface PatientObservationsProps {
   patient: Patient;
@@ -58,7 +59,7 @@ export function PatientObservations({ patient }: PatientObservationsProps): JSX.
   return (
     <Paper shadow="sm" p="md" radius="md" withBorder>
       <Title order={4} mb="md">
-        <IconChartLine size={20} style={{ display: 'inline', marginRight: '8px' }} />
+        <IconChartLine size={20} className={styles.inlineIcon} />
         {t('observationsTab.title', 'Observations')}
       </Title>
       <Menu>

@@ -27,6 +27,7 @@ import { Container } from '@mantine/core';
 import { Patient } from '@medplum/fhirtypes';
 import { useMedplum, Loading } from '@medplum/react';
 import { useMembership } from './hooks/usePermissions';
+import styles from './EMRApp.module.css';
 
 export function EMRApp(): JSX.Element {
   const medplum = useMedplum();
@@ -59,7 +60,7 @@ export function EMRApp(): JSX.Element {
 
   // Main authenticated app
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+    <div className={styles.appContainer}>
       <Header onPatientSelect={p => { setPatient(p); }} />
       <Routes>
         <Route path="/signin" element={<SignInPage />} />
@@ -70,7 +71,7 @@ export function EMRApp(): JSX.Element {
           path="/admin/users"
           element={
             <RequireAdmin membership={membership!}>
-              <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+              <Container fluid size="100%" className={styles.pageContainer} m={0}>
                 <ManageUsersPage />
               </Container>
             </RequireAdmin>
@@ -80,7 +81,7 @@ export function EMRApp(): JSX.Element {
           path="/admin/settings"
           element={
             <RequireAdmin membership={membership!}>
-              <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+              <Container fluid size="100%" className={styles.pageContainer} m={0}>
                 <SettingsPage />
               </Container>
             </RequireAdmin>
@@ -90,7 +91,7 @@ export function EMRApp(): JSX.Element {
           path="/admin/note-templates"
           element={
             <RequireAdmin membership={membership!}>
-              <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+              <Container fluid size="100%" className={styles.pageContainer} m={0}>
                 <NoteTemplatesPage />
               </Container>
             </RequireAdmin>
@@ -100,7 +101,7 @@ export function EMRApp(): JSX.Element {
           path="/admin/appointment-types"
           element={
             <RequireAdmin membership={membership!}>
-              <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+              <Container fluid size="100%" className={styles.pageContainer} m={0}>
                 <AppointmentTypesPage />
               </Container>
             </RequireAdmin>
@@ -110,7 +111,7 @@ export function EMRApp(): JSX.Element {
           path="/admin/lab-tests"
           element={
             <RequireAdmin membership={membership!}>
-              <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+              <Container fluid size="100%" className={styles.pageContainer} m={0}>
                 <LabTestsPage />
               </Container>
             </RequireAdmin>
@@ -120,7 +121,7 @@ export function EMRApp(): JSX.Element {
           path="/admin/imaging-tests"
           element={
             <RequireAdmin membership={membership!}>
-              <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+              <Container fluid size="100%" className={styles.pageContainer} m={0}>
                 <ImagingTestsPage />
               </Container>
             </RequireAdmin>
@@ -130,7 +131,7 @@ export function EMRApp(): JSX.Element {
           path="/admin/diagnostic-providers"
           element={
             <RequireAdmin membership={membership!}>
-              <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+              <Container fluid size="100%" className={styles.pageContainer} m={0}>
                 <DiagnosticProvidersPage />
               </Container>
             </RequireAdmin>
@@ -140,7 +141,7 @@ export function EMRApp(): JSX.Element {
           path="/admin/diagnosis-codes"
           element={
             <RequireAdmin membership={membership!}>
-              <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+              <Container fluid size="100%" className={styles.pageContainer} m={0}>
                 <DiagnosisCodesPage />
               </Container>
             </RequireAdmin>
@@ -150,7 +151,7 @@ export function EMRApp(): JSX.Element {
           path="/admin/medications"
           element={
             <RequireAdmin membership={membership!}>
-              <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+              <Container fluid size="100%" className={styles.pageContainer} m={0}>
                 <MedicationCatalogPage />
               </Container>
             </RequireAdmin>
@@ -160,7 +161,7 @@ export function EMRApp(): JSX.Element {
           path="/admin/inventory"
           element={
             <RequireAdmin membership={membership!}>
-              <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+              <Container fluid size="100%" className={styles.pageContainer} m={0}>
                 <InventoryPage />
               </Container>
             </RequireAdmin>
@@ -170,7 +171,7 @@ export function EMRApp(): JSX.Element {
           path="/admin/departments"
           element={
             <RequireAdmin membership={membership!}>
-              <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+              <Container fluid size="100%" className={styles.pageContainer} m={0}>
                 <DepartmentsPage />
               </Container>
             </RequireAdmin>
@@ -180,7 +181,7 @@ export function EMRApp(): JSX.Element {
           path="/admin/beds"
           element={
             <RequireAdmin membership={membership!}>
-              <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+              <Container fluid size="100%" className={styles.pageContainer} m={0}>
                 <BedsPage />
               </Container>
             </RequireAdmin>
@@ -189,7 +190,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/scheduling/manage"
           element={
-            <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+            <Container fluid size="100%" className={styles.pageContainer} m={0}>
               <ScheduleManagementPage />
             </Container>
           }
@@ -197,7 +198,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/scheduling/book"
           element={
-            <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+            <Container fluid size="100%" className={styles.pageContainer} m={0}>
               <BookAppointmentPage />
             </Container>
           }
@@ -205,7 +206,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/scheduling/calendar"
           element={
-            <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+            <Container fluid size="100%" className={styles.pageContainer} m={0}>
               <ProviderCalendarPage />
             </Container>
           }
@@ -213,7 +214,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/billing"
           element={
-            <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+            <Container fluid size="100%" className={styles.pageContainer} m={0}>
               <BillingPage />
             </Container>
           }
@@ -221,7 +222,7 @@ export function EMRApp(): JSX.Element {
         <Route
           path="/*"
           element={
-            <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+            <Container fluid size="100%" className={styles.pageContainer} m={0}>
               <HomePage />
             </Container>
           }

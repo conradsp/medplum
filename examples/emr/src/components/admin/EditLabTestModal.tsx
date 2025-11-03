@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { saveLabTest, LabTestDefinition, LabTestResultField } from '../../utils/labTests';
 import { getPriceFromResource } from '../../utils/billing';
 import { showSuccess, handleError } from '../../utils/errorHandling';
+import styles from './EditLabTestModal.module.css';
 
 interface EditLabTestModalProps {
   opened: boolean;
@@ -201,11 +202,11 @@ export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProp
         {/* Result Fields Section */}
         <Stack gap="xs">
           <Group justify="space-between">
-            <div style={{ fontWeight: 500 }}>{t('admin.labTests.resultFields')}</div>
+            <div className={styles.fieldLabel}>{t('admin.labTests.resultFields')}</div>
             <Button size="xs" variant="light" onClick={handleAddField}>{t('admin.labTests.addField')}</Button>
           </Group>
           {resultFields.length === 0 && (
-            <div style={{ color: '#888', fontSize: '0.9em' }}>{t('admin.labTests.noResultFields')}</div>
+            <div className={styles.fieldHint}>{t('admin.labTests.noResultFields')}</div>
           )}
           {resultFields.map((field, idx) => (
             <Group key={idx} gap="xs" align="flex-end">
@@ -215,7 +216,7 @@ export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProp
                 onChange={e => handleFieldChange(idx, { name: e.currentTarget.value })}
                 placeholder={t('admin.labTests.fieldNamePlaceholder')}
                 required
-                style={{ width: 120 }}
+                className={styles.fieldName}
               />
               <TextInput
                 label={t('admin.labTests.label')}
@@ -223,7 +224,7 @@ export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProp
                 onChange={e => handleFieldChange(idx, { label: e.currentTarget.value })}
                 placeholder={t('admin.labTests.labelPlaceholder')}
                 required
-                style={{ width: 140 }}
+                className={styles.fieldLabelInput}
               />
               <Select
                 label={t('common.type')}
@@ -235,14 +236,14 @@ export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProp
                 ]}
                 value={field.type}
                 onChange={val => handleFieldChange(idx, { type: val as LabTestResultField['type'] })}
-                style={{ width: 100 }}
+                className={styles.fieldType}
               />
               <TextInput
                 label={t('admin.labTests.unit')}
                 value={field.unit || ''}
                 onChange={e => handleFieldChange(idx, { unit: e.currentTarget.value })}
                 placeholder={t('admin.labTests.unitPlaceholder')}
-                style={{ width: 100 }}
+                className={styles.fieldUnit}
               />
               {field.type === 'select' && (
                 <TextInput
@@ -250,7 +251,7 @@ export function EditLabTestModal({ opened, onClose, test }: EditLabTestModalProp
                   value={field.options?.join(',') || ''}
                   onChange={e => handleFieldChange(idx, { options: e.currentTarget.value.split(',').map(s => s.trim()).filter(Boolean) })}
                   placeholder={t('admin.labTests.optionsPlaceholder')}
-                  style={{ width: 160 }}
+                  className={styles.fieldOptions}
                 />
               )}
               <Button size="xs" color="red" variant="subtle" onClick={() => handleRemoveField(idx)}>

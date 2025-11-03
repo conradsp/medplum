@@ -7,6 +7,7 @@ import { PatientSidebar } from '../../components/patient/PatientSidebar';
 import { PatientMainSection } from '../../components/patient/PatientMainSection';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { NewEncounterModal } from '../../components/encounter/NewEncounterModal';
+import styles from './PatientPage.module.css';
 
 export function PatientPage(): JSX.Element {
   const medplum = useMedplum();
@@ -43,13 +44,13 @@ export function PatientPage(): JSX.Element {
   };
 
   return (
-    <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+    <Container fluid size="100%" className={styles.pageContainer} m={0}>
       {patient && <NewEncounterModal opened={newEncounterModalOpen} onClose={() => setNewEncounterModalOpen(false)} patient={patient} />}
       
       <BreadcrumbNav patient={patientBreadcrumb} />
       
-      <div style={{ display: 'flex', gap: '8px', minHeight: '80vh', alignItems: 'flex-start', width: '100%' }}>
-        <div style={{ minWidth: '300px', maxWidth: '300px', flexShrink: 0 }}>
+      <div className={styles.layout}>
+        <div className={styles.sidebar}>
           <PatientSidebar 
             patient={patient} 
             selectedSection={section} 
@@ -57,7 +58,7 @@ export function PatientPage(): JSX.Element {
             onPatientUpdate={triggerRefresh}
           />
         </div>
-        <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
+        <div className={styles.mainContent}>
           <PatientMainSection 
             section={section} 
             patient={patient} 

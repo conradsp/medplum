@@ -2,6 +2,7 @@ import { JSX, useState } from 'react';
 import { Modal, Button, Group, Stack, TextInput, Select } from '@mantine/core';
 import { LabTestResultField } from '../../utils/labTests';
 import { useTranslation } from 'react-i18next';
+import styles from './EnterLabResultModal.module.css';
 
 interface EnterLabResultModalProps {
   opened: boolean;
@@ -34,16 +35,16 @@ export function EnterLabResultModal({ opened, onClose, resultFields, onSave }: E
               onChange={e => handleChange(field.name, e.currentTarget.value)}
               placeholder={field.unit ? t('orders.valueWithUnit', { unit: field.unit }) : t('orders.value')}
               type={field.type === 'number' ? 'number' : 'text'}
-              style={{ width: 200 }}
+              className={styles.inputField}
             />
-            {field.unit && <span style={{ marginLeft: 8 }}>{field.unit}</span>}
+            {field.unit && <span className={styles.unitLabel}>{field.unit}</span>}
             {field.type === 'select' && (
               <Select
                 label={field.label}
                 data={field.options?.map(opt => ({ value: opt, label: opt })) || []}
                 value={values[field.name] ?? ''}
                 onChange={val => handleChange(field.name, val)}
-                style={{ width: 200 }}
+                className={styles.inputField}
               />
             )}
           </Group>

@@ -5,6 +5,7 @@ import { IconCheck } from '@tabler/icons-react';
 import { JSX, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, handleError } from '../../utils/errorHandling';
+import styles from './EditNoteTemplateModal.module.css';
 interface EditNoteTemplateModalProps {
   opened: boolean;
   onClose: () => void;
@@ -154,7 +155,7 @@ export function EditNoteTemplateModal({ opened, onClose, template }: EditNoteTem
                     placeholder={t('admin.noteTemplates.fieldLabel')}
                     value={item.text}
                     onChange={(e) => handleUpdateField(index, { text: e.currentTarget.value })}
-                    style={{ flex: 1 }}
+                    className={styles.fieldInput}
                     size="sm"
                   />
                   <Select
@@ -169,7 +170,7 @@ export function EditNoteTemplateModal({ opened, onClose, template }: EditNoteTem
                     ]}
                     value={item.type}
                     onChange={(value) => handleUpdateField(index, { type: value as any })}
-                    style={{ width: 140 }}
+                    className={styles.fieldType}
                     size="sm"
                   />
                   <Button

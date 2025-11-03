@@ -23,7 +23,7 @@ export function ProceduresTab({ procedures }: ProceduresTabProps): JSX.Element {
       {procedures.map((proc) => (
         <Paper key={proc.id} p="md" withBorder>
           <Group justify="space-between" mb="xs">
-            <div style={{ flex: 1 }}>
+            <div className="flex-1">
               <Text fw={500}>{proc.code?.coding?.[0]?.display || proc.code?.text}</Text>
               <Text size="xs" c="dimmed" mt={4}>
                 {proc.performedDateTime && formatDateTime(proc.performedDateTime)}

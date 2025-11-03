@@ -29,6 +29,7 @@ import { HistoryTab } from '../../components/encounter/tabs/HistoryTab';
 import { isVitalSign } from '../../utils/encounterUtils';
 import { getEncounterPrescriptions, getEncounterAdministrations } from '../../utils/medications';
 import { useTranslation } from 'react-i18next';
+import styles from './EncounterPageLayout.module.css';
 
 interface EncounterPageProps {
   medplum: MedplumClient;
@@ -155,16 +156,16 @@ export function EncounterPage({ medplum, encounter, patient }: EncounterPageProp
   }
 
   return (
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', width: '100%' }}>
+    <div className={styles.layout}>
       {/* Left Sidebar - Patient Info */}
       {patient && (
-        <div style={{ minWidth: '300px', maxWidth: '300px', flexShrink: 0 }}>
+        <div className={styles.sidebar}>
           <PatientSidebar patient={patient} selectedSection="" onSectionSelect={() => {}} />
         </div>
       )}
 
       {/* Main Content */}
-      <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
+      <div className={styles.mainContent}>
         <Document>
           {/* Modals */}
           {patient && encounter && (

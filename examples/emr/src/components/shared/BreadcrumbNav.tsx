@@ -2,6 +2,7 @@ import { Breadcrumbs, Anchor, Text } from '@mantine/core';
 import { IconChevronRight } from '@tabler/icons-react';
 import { JSX } from 'react';
 import { useNavigate, useLocation } from 'react-router';
+import styles from './BreadcrumbNav.module.css';
 
 interface BreadcrumbNavProps {
   patient?: { id: string; name: string } | null;
@@ -26,7 +27,7 @@ export function BreadcrumbNav({ patient, encounter }: BreadcrumbNavProps): JSX.E
     <Anchor 
       key="home"
       onClick={() => navigate('/')}
-      style={{ cursor: 'pointer' }}
+      className={styles.clickableAnchor}
       size="sm"
     >
       Home
@@ -39,7 +40,7 @@ export function BreadcrumbNav({ patient, encounter }: BreadcrumbNavProps): JSX.E
       <Anchor 
         key="patient"
         onClick={() => navigate(`/patient/${patient.id}`)}
-        style={{ cursor: 'pointer' }}
+        className={styles.clickableAnchor}
         size="sm"
       >
         {patient.name}

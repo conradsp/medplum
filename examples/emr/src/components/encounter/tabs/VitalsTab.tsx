@@ -65,7 +65,7 @@ export function VitalsTab({ vitals }: VitalsTabProps): JSX.Element {
                   return (
                     <Paper key={obs.id} p="sm" withBorder bg="gray.0">
                       <Group justify="space-between">
-                        <div style={{ flex: 1 }}>
+                        <div className="flex-1">
                           <Text size="sm" fw={500}>
                             {obs.code?.coding?.[0]?.display || obs.code?.text || 'Unknown Vital'}
                           </Text>
@@ -75,7 +75,7 @@ export function VitalsTab({ vitals }: VitalsTabProps): JSX.Element {
                             </Badge>
                           )}
                         </div>
-                        <div style={{ textAlign: 'right' }}>
+                        <div className="text-right">
                           {obs.valueQuantity && (
                             <>
                               <Text size="lg" fw={700} c="blue">

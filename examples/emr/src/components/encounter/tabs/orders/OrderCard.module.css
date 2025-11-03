@@ -1,0 +1,49 @@
+/* OrderCard Styles */
+
+.orderCard {
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+
+.orderCard:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.testInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.statusBadge {
+  flex-shrink: 0;
+}
+
+.details {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.detailItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--color-secondary);
+  font-size: 0.875rem;
+}
+
+.iconDimmed {
+  color: var(--color-dimmed);
+}
+
+.thumbnail {
+  max-width: 120px;
+  max-height: 120px;
+  border-radius: var(--radius-sm);
+}
+
+.resultLabel {
+  min-width: 120px;
+}
+

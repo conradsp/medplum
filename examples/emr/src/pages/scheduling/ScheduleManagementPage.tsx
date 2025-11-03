@@ -136,7 +136,7 @@ export function ScheduleManagementPage(): JSX.Element {
         practitioner={selectedPractitionerData || null}
       />
 
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.paper}>
         <Group justify="space-between" mb="lg">
           <div>
             <Title order={2}>
@@ -158,7 +158,7 @@ export function ScheduleManagementPage(): JSX.Element {
             data={practitionerOptions}
             value={selectedPractitioner}
             onChange={setSelectedPractitioner}
-            style={{ flex: 1, maxWidth: 400 }}
+            className={styles.select}
           />
           <Button 
             leftSection={<IconPlus size={16} />} 
@@ -180,8 +180,8 @@ export function ScheduleManagementPage(): JSX.Element {
         ) : schedules.length === 0 ? (
           <Paper p="xl" withBorder bg="gray.0">
             <Stack align="center" gap="md">
-              <IconCalendar size={48} style={{ color: '#adb5bd' }} />
-              <div style={{ textAlign: 'center' }}>
+              <IconCalendar size={48} className={styles.emptyIcon} />
+              <div className={styles.emptyContainer}>
                 <Text size="lg" fw={500} mb="xs">
                   No Schedules Found
                 </Text>

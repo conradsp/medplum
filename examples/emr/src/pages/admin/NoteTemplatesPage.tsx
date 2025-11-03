@@ -8,6 +8,7 @@ import { getNoteTemplates, initializeDefaultTemplates } from '../../utils/noteTe
 import { EditNoteTemplateModal } from '../../components/admin/EditNoteTemplateModal';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { showSuccess, handleError } from '../../utils/errorHandling';
+import styles from './NoteTemplatesPage.module.css';
 
 export function NoteTemplatesPage(): JSX.Element {
   const { t } = useTranslation();
@@ -82,7 +83,7 @@ export function NoteTemplatesPage(): JSX.Element {
         template={selectedTemplate}
       />
 
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.paper}>
         <Group justify="space-between" mb="lg">
           <div>
             <Title order={2}>
@@ -116,8 +117,8 @@ export function NoteTemplatesPage(): JSX.Element {
         ) : templates.length === 0 ? (
           <Paper p="xl" withBorder bg="gray.0">
             <Stack align="center" gap="md">
-              <IconFileText size={48} style={{ color: '#adb5bd' }} />
-              <div style={{ textAlign: 'center' }}>
+              <IconFileText size={48} className={styles.emptyStateIcon} />
+              <div className={styles.emptyStateContainer}>
                 <Text size="lg" fw={500} mb="xs">
                   {t('admin.noteTemplates.noTemplates')}
                 </Text>

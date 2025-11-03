@@ -2,6 +2,7 @@ import { Paper, Title, Container, Image } from '@mantine/core';
 import { Logo, SignInForm, useMedplumContext } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
+import styles from './SignInPage.module.css';
 
 export function SignInPage(): JSX.Element {
   const navigate = useNavigate();
@@ -42,9 +43,9 @@ export function SignInPage(): JSX.Element {
   }, [medplum]);
   
   return (
-    <Container size="xs" style={{ marginTop: '100px' }}>
+    <Container size="xs" className={styles.container}>
       <Paper shadow="xl" p="xl" radius="md" withBorder>
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <div className={styles.logoContainer}>
           {logoUrl ? (
             <Image
               src={logoUrl}
@@ -52,7 +53,7 @@ export function SignInPage(): JSX.Element {
               h={32}
               w="auto"
               fit="contain"
-              style={{ margin: '0 auto' }}
+              className={styles.logo}
             />
           ) : (
             <Logo size={32} />

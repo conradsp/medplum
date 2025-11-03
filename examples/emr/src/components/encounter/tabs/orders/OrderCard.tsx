@@ -4,6 +4,7 @@ import { formatDateTime } from '@medplum/core';
 import { ServiceRequest, Observation, DocumentReference } from '@medplum/fhirtypes';
 import { getServiceRequestStatusColor } from '../../../../utils/encounterUtils';
 import { useSearchResources } from '@medplum/react';
+import styles from './OrderCard.module.css';
 
 interface OrderCardProps {
   sr: ServiceRequest;
@@ -54,7 +55,7 @@ export function OrderCard({ sr, isLab, isImaging, results, documents, t, onUploa
           size="xs"
           variant="subtle"
           onClick={() => setExpanded(!expanded)}
-          style={{ marginLeft: 'auto' }}
+          className="ml-auto"
         >
           {expanded ? t('orders.collapse') || 'Collapse' : t('orders.expand') || 'Expand'}
         </Button>
@@ -90,7 +91,7 @@ export function OrderCard({ sr, isLab, isImaging, results, documents, t, onUploa
         {sr.note && sr.note.length > 0 && (
           <Paper bg="blue.0" p="sm" mt="xs" radius="sm">
             <Text size="xs" c="dimmed" mb={4}>{t('orders.clinicalNotes')}</Text>
-            <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+            <Text size="sm" className="whitespace-pre-wrap">
               {sr.note[0].text}
             </Text>
           </Paper>
@@ -101,7 +102,7 @@ export function OrderCard({ sr, isLab, isImaging, results, documents, t, onUploa
           </Button>
         )}
         {isImaging && documents.length > 0 && (
-          <Paper bg="gray.1" p="sm" mt="xs" radius="sm" style={{ cursor: 'pointer' }}
+          <Paper bg="gray.1" p="sm" mt="xs" radius="sm" className="cursor-pointer"
             onClick={onViewImages}>
             <Text size="xs" c="dimmed" mb={4}>Attached Images</Text>
             <Stack gap="xs">
@@ -111,12 +112,12 @@ export function OrderCard({ sr, isLab, isImaging, results, documents, t, onUploa
                     <img
                       src={`data:${doc.content[0].attachment.contentType};base64,${doc.content[0].attachment.data}`}
                       alt={doc.content[0].attachment.title}
-                      style={{ maxWidth: 120, maxHeight: 120, borderRadius: 4 }}
+                      className={styles.thumbnail}
                     />
                   ) : null}
                   <Text fw={500}>{doc.content?.[0]?.attachment?.title}</Text>
                   {doc.description && <Text size="sm">{doc.description}</Text>}
-                  <Text c="dimmed" size="xs" style={{ marginLeft: 'auto' }}>
+                  <Text c="dimmed" size="xs" className="ml-auto">
                     {doc.date ? formatDateTime(doc.date) : ''}
                   </Text>
                     <Button size="xs" color="red" variant="light" onClick={e => { e.stopPropagation(); if (onDeleteImage) { onDeleteImage(doc); } }}>
@@ -136,7 +137,7 @@ export function OrderCard({ sr, isLab, isImaging, results, documents, t, onUploa
             <Stack gap="xs">
               {results.map((obs: any, idx: any) => (
                 <Group key={idx} gap="md" align="center">
-                  <Text fw={500} style={{ minWidth: 120 }}>{obs.code?.text}</Text>
+                  <Text fw={500} className={styles.resultLabel}>{obs.code?.text}</Text>
                   {obs.valueQuantity && (
                     <Text>{obs.valueQuantity.value} {obs.valueQuantity.unit}</Text>
                   )}
@@ -149,7 +150,7 @@ export function OrderCard({ sr, isLab, isImaging, results, documents, t, onUploa
                   {obs.valueCodeableConcept && (
                     <Text>{obs.valueCodeableConcept.text}</Text>
                   )}
-                  <Text c="dimmed" size="xs" style={{ marginLeft: 'auto' }}>
+                  <Text c="dimmed" size="xs" className="ml-auto">
                     {obs.effectiveDateTime ? formatDateTime(obs.effectiveDateTime) : ''}
                   </Text>
                 </Group>

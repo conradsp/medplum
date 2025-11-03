@@ -8,6 +8,7 @@ import { handleError, showSuccess } from '../../utils/errorHandling';
 import { getDiagnosticProviders, initializeDefaultDiagnosticProviders, deleteDiagnosticProvider } from '../../utils/diagnosticProviders';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { EditDiagnosticProviderModal } from '../../components/admin/EditDiagnosticProviderModal';
+import styles from './DiagnosticProvidersPage.module.css';
 
 export function DiagnosticProvidersPage(): JSX.Element {
   const { t } = useTranslation();
@@ -104,7 +105,7 @@ export function DiagnosticProvidersPage(): JSX.Element {
   };
 
   return (
-    <Container size="xl" style={{ paddingTop: '20px', paddingBottom: '40px' }}>
+    <Container size="xl" className={styles.container}>
       <BreadcrumbNav />
       
       <Group justify="space-between" mb="xl">
@@ -145,7 +146,7 @@ export function DiagnosticProvidersPage(): JSX.Element {
               <Table.Th>{t('admin.diagnosticProviders.phone')}</Table.Th>
               <Table.Th>{t('admin.diagnosticProviders.website')}</Table.Th>
               <Table.Th>{t('admin.diagnosticProviders.status')}</Table.Th>
-              <Table.Th style={{ width: '80px' }}>{t('admin.diagnosticProviders.actions')}</Table.Th>
+              <Table.Th className={styles.actionsColumn}>{t('admin.diagnosticProviders.actions')}</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -169,7 +170,7 @@ export function DiagnosticProvidersPage(): JSX.Element {
                   </Table.Td>
                   <Table.Td>
                     {website ? (
-                      <Text size="sm" c="blue" style={{ cursor: 'pointer' }} onClick={() => window.open(website, '_blank')}>
+                      <Text size="sm" className={styles.websiteLink} onClick={() => window.open(website, '_blank')}>
                         {website.replace(/^https?:\/\//, '')}
                       </Text>
                     ) : (

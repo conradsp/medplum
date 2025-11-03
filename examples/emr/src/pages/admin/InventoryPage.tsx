@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { getMedications, getMedicationInventory, updateMedicationInventory } from '../../utils/medications';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { handleError, showSuccess } from '../../utils/errorHandling';
+import styles from './InventoryPage.module.css';
 
 interface InventoryData {
   medication: Medication;
@@ -221,7 +222,7 @@ export function InventoryPage(): JSX.Element {
         </Stack>
       </Modal>
 
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.paper}>
         <Group justify="space-between" mb="lg">
           <div>
             <Title order={2}>
@@ -266,7 +267,7 @@ export function InventoryPage(): JSX.Element {
                     <div>
                       <strong>{item.medication.code?.text || item.medication.code?.coding?.[0]?.display}</strong>
                       {item.medication.code?.coding?.[0]?.display && item.medication.code?.text !== item.medication.code?.coding?.[0]?.display && (
-                        <div style={{ fontSize: '0.875rem', color: '#666' }}>
+                        <div className={styles.genericName}>
                           {item.medication.code?.coding?.[0]?.display}
                         </div>
                       )}

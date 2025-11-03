@@ -6,6 +6,7 @@ import { logger } from '../../utils/logger';
 import { useParams } from 'react-router';
 import { useMedplum } from '@medplum/react';
 import { Encounter, Patient } from '@medplum/fhirtypes';
+import styles from './EncounterPageWrapper.module.css';
 
 export function EncounterPageWrapper(): JSX.Element {
   const medplum = useMedplum();
@@ -49,7 +50,7 @@ export function EncounterPageWrapper(): JSX.Element {
   } : null;
 
   return (
-    <Container fluid size="100%" style={{ padding: '8px 12px', margin: 0, maxWidth: '100%' }} m={0}>
+    <Container fluid size="100%" className={styles.wrapperContainer} m={0}>
       <BreadcrumbNav patient={patientBreadcrumb} encounter={encounterBreadcrumb} />
       {encounter && (
         <EncounterPage medplum={medplum} encounter={encounter} patient={patient} />

@@ -23,7 +23,7 @@ export function DiagnosesTab({ conditions }: DiagnosesTabProps): JSX.Element {
       {conditions.map((condition) => (
         <Paper key={condition.id} p="md" withBorder>
           <Group justify="space-between" mb="xs">
-            <div style={{ flex: 1 }}>
+            <div className="flex-1">
               <Text fw={500}>{condition.code?.coding?.[0]?.display || condition.code?.text}</Text>
               {condition.code?.coding?.[0]?.code && (
                 <Text size="xs" c="dimmed" mt={2}>
@@ -69,7 +69,7 @@ export function DiagnosesTab({ conditions }: DiagnosesTabProps): JSX.Element {
           {condition.note && condition.note.length > 0 && (
             <Paper bg="gray.0" p="sm" mt="xs" radius="sm">
               <Text size="xs" c="dimmed" mb={4}>{t('common.clinicalNotes', 'Clinical Notes')}</Text>
-              <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+              <Text size="sm" className="whitespace-pre-wrap">
                 {condition.note[0].text}
               </Text>
             </Paper>

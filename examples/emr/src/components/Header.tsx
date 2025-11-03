@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router';
 import { NewProviderModal } from './NewProviderModal';
 import { isUserAdmin } from '../utils/permissionUtils';
 import { getEMRSettings } from '../utils/settings';
+import styles from './Header.module.css';
 
 interface HeaderProps {
   onPatientSelect: (patient: Patient) => void;
@@ -85,9 +86,9 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
     <>
       <NewProviderModal opened={newProviderModalOpen} onClose={() => setNewProviderModalOpen(false)} />
       
-      <Group justify="space-between" p="md" style={{ borderBottom: '1px solid #eee', background: '#fff' }}>
+      <Group justify="space-between" p="md" className={styles.headerContainer}>
         {/* Left side - Logo */}
-        <Group gap="md" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
+        <Group gap="md" className={styles.logoGroup} onClick={() => navigate('/')}>
           {emrLogo ? (
             <Image 
               src={emrLogo} 
@@ -122,7 +123,7 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
             onChange={handleSearch}
             data={results.map(r => r.value)}
             onOptionSubmit={handleSelect}
-            style={{ minWidth: 350 }}
+            className={styles.searchInput}
           />
 
           {/* Admin Menu - Only shown for admins */}

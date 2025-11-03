@@ -2,14 +2,15 @@ import { Paper, Title, Container } from '@mantine/core';
 import { Logo, RegisterForm } from '@medplum/react';
 import { JSX } from 'react';
 import { useNavigate } from 'react-router';
+import styles from './RegisterPage.module.css';
 
 export function RegisterPage(): JSX.Element {
   const navigate = useNavigate();
   
   return (
-    <Container size="xs" style={{ marginTop: '100px' }}>
+    <Container size="xs" className={styles.container}>
       <Paper shadow="xl" p="xl" radius="md" withBorder>
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <div className={styles.logoContainer}>
           <Logo size={32} />
           <Title order={2} mt="md">Register for EMR</Title>
         </div>
@@ -19,7 +20,7 @@ export function RegisterPage(): JSX.Element {
             navigate('/');
           }}
         >
-          <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <div className={styles.messageContainer}>
             <p>Create an account to get started</p>
           </div>
         </RegisterForm>

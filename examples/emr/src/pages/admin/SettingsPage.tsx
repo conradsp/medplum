@@ -5,6 +5,7 @@ import { JSX, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { handleError, showSuccess } from '../../utils/errorHandling';
 import { getEMRSettings, saveEMRSettings } from '../../utils/settings';
+import styles from './SettingsPage.module.css';
 
 export function SettingsPage(): JSX.Element {
   const { t } = useTranslation();
@@ -78,9 +79,9 @@ export function SettingsPage(): JSX.Element {
 
   return (
     <Document>
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0, maxWidth: 800, margin: '0 auto' }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.paperCentered}>
         <Group mb="lg">
-          <IconSettings size={24} style={{ color: '#228be6' }} />
+          <IconSettings size={24} className={styles.icon} />
           <div>
             <Title order={2}>{t('admin.settings.title')}</Title>
             <Text size="sm" c="dimmed">

@@ -10,6 +10,7 @@ import { logger } from '../../utils/logger';
 import { notifications } from '@mantine/notifications';
 import { formatDateTime } from '@medplum/core';
 import { useTranslation } from 'react-i18next';
+import styles from './BookAppointmentPage.module.css';
 
 export function BookAppointmentPage(): JSX.Element {
   const { t } = useTranslation();
@@ -241,7 +242,7 @@ export function BookAppointmentPage(): JSX.Element {
         </Stack>
       </Modal>
 
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.paper}>
         <Group justify="space-between" mb="lg">
           <div>
             <Title order={2}>
@@ -293,12 +294,7 @@ export function BookAppointmentPage(): JSX.Element {
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  style={{
-                    padding: '8px',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                  }}
+                  className={styles.dateInput}
                 />
 
                 <Button

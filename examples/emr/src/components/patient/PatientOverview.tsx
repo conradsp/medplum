@@ -5,6 +5,7 @@ import { Loading, useSearchResources } from '@medplum/react';
 import { IconAlertCircle, IconMicroscope, IconStethoscope, IconHeartbeat } from '@tabler/icons-react';
 import { JSX } from 'react';
 import { useTranslation } from 'react-i18next';
+import styles from './PatientOverview.module.css';
 
 interface PatientOverviewProps {
   patient: Patient;
@@ -153,7 +154,7 @@ export function PatientOverview({ patient }: PatientOverviewProps): JSX.Element 
         <Paper shadow="sm" p="xs" withBorder>
           <Group mb={4} gap={4}>
             <IconHeartbeat size={18} color="#e64980" />
-            <Title order={4} style={{ fontSize: '1rem', marginBottom: 0 }}>{t('patientOverview.recentVitals')}</Title>
+            <Title order={4} className={styles.vitalsTitle}>{t('patientOverview.recentVitals')}</Title>
           </Group>
           <Divider mb={4} />
           {observations === undefined && <Loading />}
@@ -166,22 +167,22 @@ export function PatientOverview({ patient }: PatientOverviewProps): JSX.Element 
               <Stack gap={2}>
                 {vitals.slice(0, 5).map((vital) => (
                   <Group key={vital.id} justify="space-between" p={2} gap={2}>
-                    <Text size="xs" style={{ lineHeight: 1.2 }}>
+                    <Text size="xs" className={styles.vitalText}>
                       {vital.code?.coding?.[0]?.display || vital.code?.text || t('common.unknown', 'Unknown')}
                     </Text>
                     <Group gap={2}>
                       {vital.valueQuantity && (
-                        <Text size="xs" fw={600} style={{ lineHeight: 1.2 }}>
+                        <Text size="xs" fw={600} className={styles.vitalText}>
                           {vital.valueQuantity.value} {vital.valueQuantity.unit}
                         </Text>
                       )}
                       {vital.component && vital.component.length > 0 && (
-                        <Text size="xs" fw={600} style={{ lineHeight: 1.2 }}>
+                        <Text size="xs" fw={600} className={styles.vitalText}>
                           {vital.component.map(c => `${c.valueQuantity?.value}${c.valueQuantity?.unit}`).join('/')}
                         </Text>
                       )}
                       {vital.effectiveDateTime && (
-                        <Text size="xs" c="dimmed" style={{ lineHeight: 1.2 }}>
+                        <Text size="xs" c="dimmed" className={styles.vitalText}>
                           {formatDate(vital.effectiveDateTime)}
                         </Text>
                       )}
@@ -196,17 +197,17 @@ export function PatientOverview({ patient }: PatientOverviewProps): JSX.Element 
                   return [weight, height].filter((v): v is typeof weight => !!v).map((vital) => (
                     vital ? (
                       <Group key={vital.id} justify="space-between" p={2} gap={2}>
-                        <Text size="xs" style={{ lineHeight: 1.2 }}>
+                        <Text size="xs" className={styles.vitalText}>
                           {vital.code?.coding?.[0]?.display || vital.code?.text}
                         </Text>
                         <Group gap={2}>
                           {vital.valueQuantity && (
-                            <Text size="xs" fw={600} style={{ lineHeight: 1.2 }}>
+                            <Text size="xs" fw={600} className={styles.vitalText}>
                               {vital.valueQuantity.value} {vital.valueQuantity.unit}
                             </Text>
                           )}
                           {vital.effectiveDateTime && (
-                            <Text size="xs" c="dimmed" style={{ lineHeight: 1.2 }}>
+                            <Text size="xs" c="dimmed" className={styles.vitalText}>
                               {formatDate(vital.effectiveDateTime)}
                             </Text>
                           )}

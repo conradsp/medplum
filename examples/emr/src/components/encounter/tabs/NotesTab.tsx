@@ -70,7 +70,7 @@ export function NotesTab({ documents, diagnosticReports }: NotesTabProps): JSX.E
                         <Text size="sm" mt="xs" c="dimmed">{doc.description}</Text>
                       )}
                       {doc.content && doc.content.length > 0 && doc.content[0].attachment?.data && (
-                        <Text size="sm" mt="xs" style={{ whiteSpace: 'pre-wrap' }}>
+                        <Text size="sm" mt="xs" className="whitespace-pre-wrap">
                           {(() => {
                             try {
                               return decodeURIComponent(escape(atob(doc.content[0].attachment.data)));
@@ -108,7 +108,7 @@ export function NotesTab({ documents, diagnosticReports }: NotesTabProps): JSX.E
                   <Text size="sm" mt="xs">{report.conclusion}</Text>
                 )}
                 {report.presentedForm && report.presentedForm.length > 0 && report.presentedForm[0].data && (
-                  <Text size="sm" mt="xs" style={{ whiteSpace: 'pre-wrap' }}>
+                  <Text size="sm" mt="xs" className="whitespace-pre-wrap">
                     {(() => {
                       try {
                         return decodeURIComponent(escape(atob(report.presentedForm[0].data)));

@@ -9,6 +9,7 @@ import { PatientEncounters } from './PatientEncounters';
 import { PatientObservations } from './PatientObservations';
 import { ClinicalImpressionDisplay } from '../shared/ClinicalImpressionDisplay';
 import { PatientOverview } from './PatientOverview';
+import styles from './PatientMainSection.module.css';
 
 interface PatientMainSectionProps {
   section: string;
@@ -23,7 +24,7 @@ export function PatientMainSection({ patient, onNewEncounter }: PatientMainSecti
   if (!patient) {
     return (
       <Document>
-        <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+        <div className={styles.emptyState}>
           {t('patient.selectToViewDetails', 'Select a patient to view details.')}
         </div>
       </Document>
@@ -33,7 +34,7 @@ export function PatientMainSection({ patient, onNewEncounter }: PatientMainSecti
   return (
     <Document>
       {/* Quick Actions */}
-      <Paper shadow="sm" p="md" mb="md" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="md" mb="md" withBorder className={styles.quickActionsPaper}>
         <Group justify="space-between">
           <Text size="sm" fw={500}>{t('patient.quickActions', 'Quick Actions')}</Text>
           <Group>

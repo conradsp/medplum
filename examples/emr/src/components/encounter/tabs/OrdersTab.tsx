@@ -10,6 +10,7 @@ import Thumbnails from 'yet-another-react-lightbox/plugins/thumbnails';
 import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 import 'yet-another-react-lightbox/styles.css';
 import 'yet-another-react-lightbox/plugins/thumbnails.css';
+import styles from './OrdersTab.module.css';
 
 import { OrderCard } from './orders/OrderCard';
 import { getOrderDocuments, getOrderResults } from './orders/orderHelpers';
@@ -196,7 +197,7 @@ export function OrdersTab({ serviceRequests }: OrdersTabProps): JSX.Element {
         size="md"
         styles={{ content: { background: '#fff' } }}
       >
-        <div style={{ height: '70vh', background: '#fff' }}>
+        <div className={styles.viewerContainer}>
           <Lightbox
             open={viewerOpen}
             close={() => setViewerOpen(false)}
@@ -204,14 +205,14 @@ export function OrdersTab({ serviceRequests }: OrdersTabProps): JSX.Element {
             plugins={[Thumbnails, Zoom]}
             render={{
               slide: ({ slide, index }: { slide: any; index: number }) => (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#fff' }}>
+                <div className={styles.slideContainer}>
                   <img
                     src={slide.src}
                     alt={slide.alt}
-                    style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: 8 }}
+                    className={styles.slideImage}
                   />
                   {slide.description && (
-                    <div style={{ marginTop: 16 }}>{slide.description}</div>
+                    <div className={styles.slideDescription}>{slide.description}</div>
                   )}
                 </div>
               ),

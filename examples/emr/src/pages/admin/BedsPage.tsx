@@ -20,6 +20,7 @@ import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { handleError, showSuccess } from '../../utils/errorHandling';
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
 import { getPriceFromResource, setPriceOnResource } from '../../utils/billing';
+import styles from './BedsPage.module.css';
 
 export function BedsPage(): JSX.Element {
   const { t } = useTranslation();
@@ -316,7 +317,7 @@ export function BedsPage(): JSX.Element {
         onCancel={handleDeleteCancel}
       />
 
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.actionsColumn}>
         <Group justify="space-between" mb="lg">
           <div>
             <Title order={2}>

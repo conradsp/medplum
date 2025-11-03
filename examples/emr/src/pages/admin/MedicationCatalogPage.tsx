@@ -10,6 +10,7 @@ import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { handleError, showSuccess } from '../../utils/errorHandling';
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
 import { getPriceFromResource, setPriceOnResource } from '../../utils/billing';
+import styles from './MedicationCatalogPage.module.css';
 
 interface MedicationFormData {
   genericName: string;
@@ -385,7 +386,7 @@ export function MedicationCatalogPage(): JSX.Element {
         onCancel={handleDeleteCancel}
       />
 
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.paper}>
         <Group justify="space-between" mb="lg">
           <div>
             <Title order={2}>
@@ -433,7 +434,7 @@ export function MedicationCatalogPage(): JSX.Element {
                     <div>
                       <strong>{medication.code?.text || medication.code?.coding?.[0]?.display}</strong>
                       {medication.code?.coding?.[0]?.display && medication.code?.text !== medication.code?.coding?.[0]?.display && (
-                        <div style={{ fontSize: '0.875rem', color: '#666' }}>
+                        <div className={styles.genericName}>
                           {medication.code?.coding?.[0]?.display}
                         </div>
                       )}

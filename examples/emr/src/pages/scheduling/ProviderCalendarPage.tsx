@@ -9,6 +9,7 @@ import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { useNavigate } from 'react-router';
 import { notifications } from '@mantine/notifications';
 import { logger } from '../../utils/logger';
+import styles from './ProviderCalendarPage.module.css';
 
 interface SlotWithAppointment {
   slot: Slot;
@@ -281,7 +282,7 @@ export function ProviderCalendarPage(): JSX.Element {
         </Stack>
       </Modal>
 
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.paper}>
         <Group justify="space-between" mb="lg">
           <div>
             <Title order={2}>
@@ -303,7 +304,7 @@ export function ProviderCalendarPage(): JSX.Element {
             data={practitionerOptions}
             value={selectedPractitioner}
             onChange={setSelectedPractitioner}
-            style={{ flex: 1, maxWidth: 300 }}
+            className={styles.select}
           />
 
           <Group>
@@ -318,13 +319,7 @@ export function ProviderCalendarPage(): JSX.Element {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              style={{
-                padding: '8px',
-                border: '1px solid #dee2e6',
-                borderRadius: '4px',
-                fontSize: '14px',
-                minWidth: '150px',
-              }}
+              className={styles.dateInput}
             />
             <ActionIcon
               variant="light"
@@ -348,7 +343,7 @@ export function ProviderCalendarPage(): JSX.Element {
         ) : slotsWithAppointments.length === 0 ? (
           <Paper p="xl" withBorder bg="gray.0">
             <Stack align="center" gap="sm">
-              <IconCalendar size={48} style={{ color: '#adb5bd' }} />
+              <IconCalendar size={48} className={styles.emptyIcon} />
               <Text ta="center" c="dimmed" fw={500} size="lg">
                 No slots available for {selectedDate}
               </Text>
@@ -356,7 +351,7 @@ export function ProviderCalendarPage(): JSX.Element {
                 This provider may not have scheduled hours on this date.
                 <br />
                 Try navigating to a different date using the arrows above, or create a schedule at{' '}
-                <Text component="span" c="blue" style={{ cursor: 'pointer' }} onClick={() => navigate('/scheduling/manage')}>
+                <Text component="span" c="blue" className={styles.linkText} onClick={() => navigate('/scheduling/manage')}>
                   Scheduling → Manage Schedules
                 </Text>
               </Text>
@@ -397,9 +392,10 @@ export function ProviderCalendarPage(): JSX.Element {
                 const isBooked = slot.status === 'busy' && appointment;
                 
                 return (
-                  <Table.Tr key={slot.id} style={{ 
-                    backgroundColor: isBooked ? undefined : slot.status === 'free' ? '#f0fff4' : undefined 
-                  }}>
+                  <Table.Tr 
+                    key={slot.id} 
+                    className={!isBooked && slot.status === 'free' ? styles.freeSlot : undefined}
+                  >
                     <Table.Td>
                       <Group gap="xs">
                         <IconClock size={16} />

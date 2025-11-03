@@ -28,7 +28,7 @@ export function ObservationsTab({ observations }: ObservationsTabProps): JSX.Ele
         return (
           <Paper key={obs.id} p="md" withBorder>
             <Group justify="space-between" mb="xs">
-              <div style={{ flex: 1 }}>
+              <div className="flex-1">
                 <Text fw={500}>{obs.code?.coding?.[0]?.display || obs.code?.text}</Text>
                 <Group gap="xs" mt={4}>
                   <Text size="xs" c="dimmed">
@@ -42,7 +42,7 @@ export function ObservationsTab({ observations }: ObservationsTabProps): JSX.Ele
                 </Group>
               </div>
               {hasValue && (
-                <div style={{ textAlign: 'right' }}>
+                <div className="text-right">
                   {obs.valueQuantity && (
                     <>
                       <Text size="lg" fw={700}>

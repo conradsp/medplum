@@ -10,6 +10,7 @@ import { getUserRoles } from '../../utils/permissionUtils';
 import { ROLE_LABELS } from '../../utils/permissions';
 import { useTranslation } from 'react-i18next';
 import { notifications } from '@mantine/notifications';
+import styles from './ManageUsersPage.module.css';
 
 export function ManageUsersPage(): JSX.Element {
   const { t } = useTranslation();
@@ -82,7 +83,7 @@ export function ManageUsersPage(): JSX.Element {
         practitioner={selectedPractitioner}
       />
       
-      <Paper shadow="sm" p="lg" withBorder style={{ marginTop: 0 }}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.paper}>
         <Group justify="space-between" mb="lg">
           <div>
             <Title order={2}>{t('users.manageUsers')}</Title>
@@ -148,7 +149,7 @@ export function ManageUsersPage(): JSX.Element {
                       <Table.Tr key={practitioner.id}>
                         <Table.Td>
                           <Group gap="xs">
-                            <IconStethoscope size={16} style={{ color: '#228be6' }} />
+                            <IconStethoscope size={16} className={styles.practitionerIcon} />
                             <Text size="sm" fw={500}>
                               {name}
                             </Text>
@@ -254,7 +255,7 @@ export function ManageUsersPage(): JSX.Element {
                       <Table.Tr key={patient.id}>
                         <Table.Td>
                           <Group gap="xs">
-                            <IconUser size={16} style={{ color: '#666' }} />
+                            <IconUser size={16} className={styles.userIcon} />
                             <Text size="sm" fw={500}>
                               {name}
                             </Text>

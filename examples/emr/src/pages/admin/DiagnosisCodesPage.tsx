@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { handleError, showSuccess } from '../../utils/errorHandling';
 import { logger } from '../../utils/logger';
 import { getAllDiagnosisCodes, initializeDefaultDiagnosisCodes, addDiagnosisCode, updateDiagnosisCode, deleteDiagnosisCode } from '../../utils/diagnosisCodes';
+import styles from './DiagnosisCodesPage.module.css';
 
 export function DiagnosisCodesPage(): JSX.Element {
   const { t } = useTranslation();
@@ -156,7 +157,7 @@ export function DiagnosisCodesPage(): JSX.Element {
                 <Table.Th>{t('admin.diagnosisCodes.code')}</Table.Th>
                 <Table.Th>{t('admin.diagnosisCodes.display')}</Table.Th>
                 <Table.Th>{t('admin.diagnosisCodes.system')}</Table.Th>
-                <Table.Th style={{ width: '100px' }}>{t('admin.diagnosisCodes.actions')}</Table.Th>
+                <Table.Th className={styles.actionsColumn}>{t('admin.diagnosisCodes.actions')}</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>

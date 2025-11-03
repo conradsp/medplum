@@ -9,6 +9,7 @@ import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { EditLabTestModal } from '../../components/admin/EditLabTestModal';
 import { getPriceFromResource } from '../../utils/billing';
 import { showSuccess, handleError } from '../../utils/errorHandling';
+import styles from './LabTestsPage.module.css';
 
 export function LabTestsPage(): JSX.Element {
   const { t } = useTranslation();
@@ -93,7 +94,7 @@ export function LabTestsPage(): JSX.Element {
   }, {});
 
   return (
-    <Container size="xl" style={{ paddingTop: '20px', paddingBottom: '40px' }}>
+    <Container size="xl" className={styles.container}>
       <BreadcrumbNav />
       
       <Group justify="space-between" mb="xl">
@@ -141,7 +142,7 @@ export function LabTestsPage(): JSX.Element {
                     <Table.Th>{t('admin.labTests.specimenType')}</Table.Th>
                     <Table.Th>{t('common.price')}</Table.Th>
                     <Table.Th>{t('common.description')}</Table.Th>
-                    <Table.Th style={{ width: '80px' }}>{t('common.action')}</Table.Th>
+                    <Table.Th className={styles.actionsColumn}>{t('common.action')}</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -169,7 +170,7 @@ export function LabTestsPage(): JSX.Element {
                         </Text>
                       </Table.Td>
                       <Table.Td>
-                        <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                        <div className={styles.inlineActions}>
                           <Button
                             size="xs"
                             variant="light"

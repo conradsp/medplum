@@ -7,8 +7,9 @@ import { useNavigate } from 'react-router';
 import { NewProviderModal } from '../admin/NewProviderModal';
 import { getEMRSettings } from '../../utils/settings';
 import { LanguageSelector } from './LanguageSelector';
-  import { useTranslation } from 'react-i18next';
-  import { useFeatureFlags } from '../../hooks/usePermissions';
+import { useTranslation } from 'react-i18next';
+import { useFeatureFlags } from '../../hooks/usePermissions';
+import styles from './Header.module.css';
 
 interface HeaderProps {
   onPatientSelect: (patient: Patient) => void;
@@ -99,9 +100,9 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
     <>
       <NewProviderModal opened={newProviderModalOpen} onClose={() => setNewProviderModalOpen(false)} />
       
-      <Group justify="space-between" p="md" style={{ borderBottom: '1px solid #eee', background: '#fff' }}>
+      <Group justify="space-between" p="md" className={styles.headerContainer}>
         {/* Left side - Logo */}
-        <Group gap="md" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
+        <Group gap="md" className={styles.logoGroup} onClick={() => navigate('/')}>
           {emrLogo && emrLogo.length > 0 ? (
             <Image 
               src={emrLogo} 
@@ -136,7 +137,7 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
             onChange={handleSearch}
             data={results.map(r => r.value)}
             onOptionSubmit={handleSelect}
-            style={{ minWidth: 350 }}
+            className={styles.searchInput}
           />
 
           {/* Scheduling Menu - Only shown if user has scheduling permissions */}
