@@ -1,0 +1,284 @@
+# Production-Ready Docker Compose for Medplum EMR
+# This configuration includes security hardening and production best practices
+# 
+# BEFORE USING:
+# 1. Copy .env.example to .env and customize all passwords
+# 2. Set up SSL certificates
+# 3. Configure your domain names
+# 4. Review all security settings
+#
+# Usage: docker compose -f docker-compose-emr-production.yml --env-file .env up -d
+
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-medplum}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Database password required}
+      - POSTGRES_DB=${POSTGRES_DB:-medplum}
+    command:
+      - 'postgres'
+      - '-c'
+      - 'listen_addresses=*'
+      - '-c'
+      - 'max_connections=200'
+      - '-c'
+      - 'shared_buffers=256MB'
+      - '-c'
+      - 'effective_cache_size=1GB'
+      - '-c'
+      - 'maintenance_work_mem=64MB'
+      - '-c'
+      - 'checkpoint_completion_target=0.9'
+      - '-c'
+      - 'wal_buffers=16MB'
+      - '-c'
+      - 'default_statistics_target=100'
+      - '-c'
+      - 'statement_timeout=60000'
+      - '-c'
+      - 'default_transaction_isolation=REPEATABLE READ'
+      - '-c'
+      - 'shared_preload_libraries=pg_stat_statements,auto_explain'
+      - '-c'
+      - 'log_statement=all'
+      - '-c'
+      - 'log_duration=on'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-medplum}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medplum-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    # Only expose if needed for external access
+    # ports:
+    #   - '5432:5432'
+
+  redis:
+    image: redis:7
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD:?Redis password required} --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medplum-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    # Only expose if needed for external access
+    # ports:
+    #   - '6379:6379'
+
+  medplum-server:
+    image: medplum/medplum-server:latest
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '${MEDPLUM_PORT:-8103}:8103'
+    volumes:
+      - ${MEDPLUM_CONFIG_PATH:-./medplum.config.json}:/usr/src/medplum/packages/server/medplum.config.json
+      - medplum_storage:/usr/src/medplum/packages/server/binary
+      - ./logs:/usr/src/medplum/logs
+    entrypoint: >
+      sh -c "
+      if [ -f medplum.config.json ]; then
+        echo 'Config file found, running with custom config'
+        node --require ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js file:medplum.config.json
+      else
+        echo 'Running with environment variables'
+        node --require ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js env
+      fi
+      "
+    environment:
+      NODE_ENV: production
+      MEDPLUM_PORT: 8103
+      MEDPLUM_BASE_URL: ${MEDPLUM_BASE_URL:?Base URL required}
+      MEDPLUM_APP_BASE_URL: ${MEDPLUM_APP_BASE_URL:?App URL required}
+      MEDPLUM_STORAGE_BASE_URL: ${MEDPLUM_STORAGE_BASE_URL:?Storage URL required}
+
+      MEDPLUM_DATABASE_HOST: postgres
+      MEDPLUM_DATABASE_PORT: 5432
+      MEDPLUM_DATABASE_DBNAME: ${POSTGRES_DB:-medplum}
+      MEDPLUM_DATABASE_USERNAME: ${POSTGRES_USER:-medplum}
+      MEDPLUM_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+      MEDPLUM_DATABASE_SSL: ${MEDPLUM_DATABASE_SSL:-false}
+
+      MEDPLUM_REDIS_HOST: redis
+      MEDPLUM_REDIS_PORT: 6379
+      MEDPLUM_REDIS_PASSWORD: ${REDIS_PASSWORD:?Redis password required}
+      MEDPLUM_REDIS_TLS: ${MEDPLUM_REDIS_TLS:-false}
+
+      MEDPLUM_BINARY_STORAGE: 'file:./binary/'
+      MEDPLUM_SUPPORT_EMAIL: ${MEDPLUM_SUPPORT_EMAIL:-"Medplum Support <support@medplum.com>"}
+      
+      # OAuth (optional - leave empty to disable)
+      MEDPLUM_GOOGLE_CLIENT_ID: ${MEDPLUM_GOOGLE_CLIENT_ID:-}
+      MEDPLUM_GOOGLE_CLIENT_SECRET: ${MEDPLUM_GOOGLE_CLIENT_SECRET:-}
+      
+      # reCAPTCHA (optional - leave empty to disable)
+      MEDPLUM_RECAPTCHA_SITE_KEY: ${MEDPLUM_RECAPTCHA_SITE_KEY:-}
+      MEDPLUM_RECAPTCHA_SECRET_KEY: ${MEDPLUM_RECAPTCHA_SECRET_KEY:-}
+      
+      # Security settings
+      MEDPLUM_MAX_JSON_SIZE: ${MEDPLUM_MAX_JSON_SIZE:-1mb}
+      MEDPLUM_MAX_BATCH_SIZE: ${MEDPLUM_MAX_BATCH_SIZE:-50mb}
+      MEDPLUM_ALLOWED_ORIGINS: ${MEDPLUM_ALLOWED_ORIGINS:?Allowed origins required}
+      MEDPLUM_INTROSPECTION_ENABLED: ${MEDPLUM_INTROSPECTION_ENABLED:-false}
+      
+      # Bot configuration
+      MEDPLUM_BOT_LAMBDA_ROLE_ARN: ${MEDPLUM_BOT_LAMBDA_ROLE_ARN:-}
+      MEDPLUM_BOT_LAMBDA_LAYER_NAME: ${MEDPLUM_BOT_LAMBDA_LAYER_NAME:-medplum-bot-layer}
+      MEDPLUM_VM_CONTEXT_BOTS_ENABLED: ${MEDPLUM_VM_CONTEXT_BOTS_ENABLED:-true}
+      MEDPLUM_DEFAULT_BOT_RUNTIME_VERSION: ${MEDPLUM_DEFAULT_BOT_RUNTIME_VERSION:-vmcontext}
+      
+      # Performance
+      MEDPLUM_SHUTDOWN_TIMEOUT_MILLISECONDS: 30000
+      
+      # Logging
+      MEDPLUM_LOG_LEVEL: ${MEDPLUM_LOG_LEVEL:-info}
+
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          'fetch("http://localhost:8103/healthcheck").then(r => r.json()).then(console.log).catch(() => { process.exit(1); })',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - medplum-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  emr-app:
+    build:
+      context: ./examples/emr
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+    restart: always
+    depends_on:
+      medplum-server:
+        condition: service_healthy
+    ports:
+      - '${EMR_PORT:-3000}:80'
+    environment:
+      - NGINX_HOST=${NGINX_HOST:-localhost}
+      - NGINX_PORT=80
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - medplum-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    # Security: Run as non-root user
+    user: nginx
+    # Read-only root filesystem (except for nginx cache/temp)
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:rw,noexec,nosuid,size=100m
+      - /var/run:rw,noexec,nosuid,size=10m
+      - /tmp:rw,noexec,nosuid,size=100m
+
+networks:
+  medplum-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  medplum_storage:
+    driver: local
+
+# Optional: Add monitoring services
+# Uncomment to enable Prometheus and Grafana
+#
+#   prometheus:
+#     image: prom/prometheus:latest
+#     restart: always
+#     volumes:
+#       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+#       - prometheus_data:/prometheus
+#     ports:
+#       - '9090:9090'
+#     networks:
+#       - medplum-network
+#     deploy:
+#       resources:
+#         limits:
+#           cpus: '0.5'
+#           memory: 512M
+#
+#   grafana:
+#     image: grafana/grafana:latest
+#     restart: always
+#     volumes:
+#       - grafana_data:/var/lib/grafana
+#     ports:
+#       - '3001:3000'
+#     environment:
+#       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:?Grafana password required}
+#     networks:
+#       - medplum-network
+#     deploy:
+#       resources:
+#         limits:
+#           cpus: '0.5'
+#           memory: 512M
+#
+# volumes:
+#   prometheus_data:
+#   grafana_data:
+
