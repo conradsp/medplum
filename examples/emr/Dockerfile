@@ -8,13 +8,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build the application (skip bots build since there are no bots in this example)
+RUN npx tsc && npx vite build
 
 # Stage 2: Production image with nginx
 FROM nginx:alpine
