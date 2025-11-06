@@ -58,6 +58,11 @@ medplum-app.tar.gz
 # All certificate files
 *.p12
 
+# Docker files
+docker-compose-emr.yml
+docker-compose-emr-production.yml
+docker-compose-full-stack.yml
+
 # Agent artifacts
 packages/agent/*agent-*-linux*
 packages/agent/sea-prep.blob

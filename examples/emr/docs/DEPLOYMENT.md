@@ -18,34 +18,23 @@ This guide explains how to deploy the Medplum EMR application with Docker Compos
 sudo apt-get update
 
 # Install prerequisites
-sudo apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg \
-    lsb-release
+sudo apt install apt-transport-https ca-certificates curl software-properties-common
 
-# Add Docker's official GPG key
+# Add Docker's official GPG key:
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 
-# Set up the stable repository
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+# Add the repository to Apt sources:
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# Install Docker Engine
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+sudo apt update
+apt-cache policy docker-ce
 
-# Add your user to the docker group (optional, to run docker without sudo)
-sudo usermod -aG docker $USER
-
-# Log out and back in for group changes to take effect
-```
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 ### Verify Installation
 
 ```bash
+sudo systemctl status docker
 docker --version
 docker compose version
 ```
