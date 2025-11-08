@@ -4,9 +4,10 @@ import { IconSearch, IconUserPlus, IconUsers, IconUser, IconLogout, IconShieldCh
 import { useMedplum } from '@medplum/react';
 import { Patient } from '@medplum/fhirtypes';
 import { useNavigate } from 'react-router';
-import { NewProviderModal } from './NewProviderModal';
+import { NewProviderModal } from './admin/NewProviderModal';
 import { isUserAdmin } from '../utils/permissionUtils';
 import { getEMRSettings } from '../utils/settings';
+import { useCurrentUser, useMembership } from '../hooks/usePermissions';
 import styles from './Header.module.css';
 
 interface HeaderProps {
@@ -22,7 +23,9 @@ export function Header({ onPatientSelect }: HeaderProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const profile = medplum.getProfile();
-  const isAdmin = isUserAdmin(profile);
+  const currentUser = useCurrentUser();
+  const membership = useMembership();
+  const isAdmin = isUserAdmin(currentUser, membership);
 
   // Load EMR settings on mount
   useEffect(() => {

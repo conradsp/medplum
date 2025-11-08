@@ -7,6 +7,8 @@ import { getPractitionerSchedules, updateScheduleStatus, deleteFutureSlots, dele
 import { CreateScheduleModal } from '../../components/scheduling/CreateScheduleModal';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
 import { notifications } from '@mantine/notifications';
+import { logger } from '../../utils/logger';
+import styles from './ScheduleManagementPage.module.css';
 
 export function ScheduleManagementPage(): JSX.Element {
   const medplum = useMedplum();

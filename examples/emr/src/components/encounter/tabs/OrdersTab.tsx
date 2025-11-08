@@ -150,8 +150,8 @@ export function OrdersTab({ serviceRequests }: OrdersTabProps): JSX.Element {
         {serviceRequests?.map((sr) => {
           const isLab = sr.category?.[0]?.coding?.[0]?.code === '108252007';
           const isImaging = sr.category?.[0]?.coding?.[0]?.code === '363679005';
-          const results = getOrderResults(sr, allObservations);
-          const documents = getOrderDocuments(sr, documentReferences);
+          const results = getOrderResults(sr, allObservations || []);
+          const documents = getOrderDocuments(sr, documentReferences || []);
           const isExpanded = !!expandedOrders[sr.id ?? ''];
           return (
             <OrderCard
@@ -204,7 +204,7 @@ export function OrdersTab({ serviceRequests }: OrdersTabProps): JSX.Element {
             slides={viewerSlides}
             plugins={[Thumbnails, Zoom]}
             render={{
-              slide: ({ slide, index }: { slide: any; index: number }) => (
+              slide: ({ slide }: { slide: any }) => (
                 <div className={styles.slideContainer}>
                   <img
                     src={slide.src}

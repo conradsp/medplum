@@ -122,6 +122,6 @@ interface ObservationListProps {
 
 function ObservationList({ code, patient }: ObservationListProps): JSX.Element {
   const { t } = useTranslation();
-  return <div>{t('observationsTab.listFor', 'Observation list for {{type}}', { type: t(`observationsTab.${code.display}`, code.display) })}</div>;
+  return <div>{t('observationsTab.listFor', { defaultValue: 'Observation list for {{type}}', type: code.display })}</div>;
 }
 

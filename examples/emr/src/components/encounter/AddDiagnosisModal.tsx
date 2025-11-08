@@ -5,6 +5,7 @@ import { Patient, Encounter, Condition } from '@medplum/fhirtypes';
 import { notifications } from '@mantine/notifications';
 import { getAllDiagnosisCodes } from '../../utils/diagnosisCodes';
 import { useTranslation } from 'react-i18next';
+import { logger } from '../../utils/logger';
 
 interface AddDiagnosisModalProps {
   opened: boolean;

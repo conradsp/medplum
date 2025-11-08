@@ -58,7 +58,7 @@ export function PaymentModal({ opened, onClose, patientId, encounterId }: Paymen
     try {
       await recordPayment(medplum, patientId, encounterId, {
         amount,
-        method,
+        method: method as 'cash' | 'credit-card' | 'debit-card' | 'check' | 'insurance' | 'other',
         date: date.toISOString(),
         notes,
       });

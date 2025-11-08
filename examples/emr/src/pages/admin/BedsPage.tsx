@@ -134,7 +134,7 @@ export function BedsPage(): JSX.Element {
           ],
         };
         // Remove departmentName before sending to FHIR server
-        const { departmentName, ...locationResource } = updatedBed;
+        const { departmentName, ...locationResource } = updatedBed as any;
         const bedWithPrice = setPriceOnResource(locationResource, formData.dailyRate || 0);
         await updateBed(medplum, bedWithPrice);
         showSuccess(t('beds.bedUpdateSuccess'));

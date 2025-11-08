@@ -140,12 +140,12 @@ export function invalidateCache(
 ): void {
   if (resourceId) {
     // Invalidate specific resource
-    medplum.invalidateSearches(resourceType);
+    medplum.invalidateSearches(resourceType as any);
     // The MedplumClient doesn't expose cache invalidation for specific resources,
     // so we trigger a refresh instead
   } else {
     // Invalidate all resources of this type
-    medplum.invalidateSearches(resourceType);
+    medplum.invalidateSearches(resourceType as any);
   }
 }
 

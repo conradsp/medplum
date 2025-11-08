@@ -42,6 +42,7 @@ export function MedicationCatalogPage(): JSX.Element {
     rxcui: '',
     ndc: '',
     category: 'other',
+    price: 0,
     description: '',
   });
   const [confirmOpen, setConfirmOpen] = useState(false);

@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 import { Select } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import styles from './LanguageSelector.module.css';

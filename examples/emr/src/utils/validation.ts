@@ -285,6 +285,7 @@ export function validateForm<T extends Record<string, any>>(
 
   for (const [field, validator] of Object.entries(rules)) {
     const value = data[field as keyof T];
+    if (!validator) continue;
     const result = validator(value);
 
     if (result === false) {

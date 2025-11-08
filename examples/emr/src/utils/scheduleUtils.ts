@@ -324,7 +324,7 @@ export async function deleteSchedule(
   
   const slots = allSlots.entry?.map(e => e.resource) || [];
   for (const slot of slots) {
-    if (slot.id) {
+    if (slot && slot.id) {
       try {
         await medplum.deleteResource('Slot', slot.id);
       } catch (error) {
