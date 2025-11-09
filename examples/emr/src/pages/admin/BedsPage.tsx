@@ -317,7 +317,7 @@ export function BedsPage(): JSX.Element {
         onCancel={handleDeleteCancel}
       />
 
-      <Paper shadow="sm" p="lg" withBorder className={styles.actionsColumn}>
+      <Paper shadow="sm" p="lg" withBorder className={styles.paper}>
         <Group justify="space-between" mb="lg">
           <div>
             <Title order={2}>
