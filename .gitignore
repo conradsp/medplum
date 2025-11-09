@@ -64,6 +64,9 @@ docker-compose-emr-https.yml
 docker-compose-emr-production.yml
 docker-compose-full-stack.yml
 
+# Settings files
+packages/server/medplum.config.json
+
 # Agent artifacts
 packages/agent/*agent-*-linux*
 packages/agent/sea-prep.blob
