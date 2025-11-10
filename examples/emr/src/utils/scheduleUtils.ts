@@ -118,8 +118,8 @@ async function generateSlotsForDay(
   const [startHour, startMinute] = startTime.split(':').map(Number);
   const [endHour, endMinute] = endTime.split(':').map(Number);
   
-  // Create datetime for start and end using UTC to avoid timezone issues
-  const startDateTime = new Date(Date.UTC(
+  // Create datetime for start and end using local time
+  const startDateTime = new Date(
     date.getFullYear(),
     date.getMonth(),
     date.getDate(),
@@ -127,9 +127,9 @@ async function generateSlotsForDay(
     startMinute,
     0,
     0
-  ));
+  );
   
-  const endDateTime = new Date(Date.UTC(
+  const endDateTime = new Date(
     date.getFullYear(),
     date.getMonth(),
     date.getDate(),
@@ -137,7 +137,7 @@ async function generateSlotsForDay(
     endMinute,
     0,
     0
-  ));
+  );
   
   // Generate slots
   let currentTime = new Date(startDateTime);
@@ -150,7 +150,7 @@ async function generateSlotsForDay(
       const [breakStartHour, breakStartMinute] = breakTime.start.split(':').map(Number);
       const [breakEndHour, breakEndMinute] = breakTime.end.split(':').map(Number);
       
-      const breakStart = new Date(Date.UTC(
+      const breakStart = new Date(
         date.getFullYear(),
         date.getMonth(),
         date.getDate(),
@@ -158,9 +158,9 @@ async function generateSlotsForDay(
         breakStartMinute,
         0,
         0
-      ));
+      );
       
-      const breakEnd = new Date(Date.UTC(
+      const breakEnd = new Date(
         date.getFullYear(),
         date.getMonth(),
         date.getDate(),
@@ -168,7 +168,7 @@ async function generateSlotsForDay(
         breakEndMinute,
         0,
         0
-      ));
+      );
       
       // Check if slot overlaps with break
       return (

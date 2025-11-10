@@ -20,12 +20,44 @@ export async function bookAppointment(
   medplum: MedplumClient,
   request: BookAppointmentRequest
 ): Promise<Appointment> {
-  // Mark slot as busy first
-  if (request.slot.id) {
+  // Check if this is a combined slot (multiple slots combined for longer appointments)
+  const combinedSlotIds: string[] = [];
+  const combinedExtension = request.slot.meta?.extension?.find(
+    ext => ext.url === 'http://medplum.com/combined-slots'
+  );
+  
+  if (combinedExtension?.valueString) {
+    try {
+      combinedSlotIds.push(...JSON.parse(combinedExtension.valueString));
+    } catch (error) {
+      logger.error('Failed to parse combined slot IDs', error);
+    }
+  }
+
+  // Mark all slots as busy
+  const slotReferences: any[] = [];
+  
+  if (combinedSlotIds.length > 0) {
+    // Mark all combined slots as busy
+    for (const slotId of combinedSlotIds) {
+      try {
+        const slot = await medplum.readResource('Slot', slotId);
+        await medplum.updateResource({
+          ...slot,
+          status: 'busy',
+        });
+        slotReferences.push({ reference: `Slot/${slotId}` });
+      } catch (error) {
+        logger.error(`Failed to mark slot ${slotId} as busy`, error);
+      }
+    }
+  } else if (request.slot.id) {
+    // Single slot
     await medplum.updateResource({
       ...request.slot,
       status: 'busy',
     });
+    slotReferences.push({ reference: `Slot/${request.slot.id}` });
   }
 
   // Create appointment
@@ -40,7 +72,7 @@ export async function bookAppointment(
     description: request.note,
     start: request.slot.start,
     end: request.slot.end,
-    slot: request.slot.id ? [{ reference: `Slot/${request.slot.id}` }] : undefined,
+    slot: slotReferences.length > 0 ? slotReferences : undefined,
     participant: [
       {
         actor: request.patient,
@@ -188,9 +220,8 @@ export async function searchAvailableSlots(
       searchParams['start'] = `ge${startDate}`;
     }
     
-    if (serviceType) {
-      searchParams['service-type'] = serviceType;
-    }
+    // Don't filter by service-type in the search, do it in code instead
+    // This is because the FHIR search might not match the CodeableConcept correctly
     
     const result = await medplum.search('Slot', searchParams);
     let slots = result.entry?.map(e => e.resource as Slot) || [];
@@ -203,6 +234,9 @@ export async function searchAvailableSlots(
         return slotStart < endDateTime;
       });
     }
+    
+    // Don't filter by service type - allow booking any appointment type in any slot
+    // The appointment type is applied when booking, not when searching for slots
     
     return slots;
   } catch (error) {

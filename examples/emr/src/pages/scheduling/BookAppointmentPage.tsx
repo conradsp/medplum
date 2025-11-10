@@ -102,6 +102,77 @@ export function BookAppointmentPage(): JSX.Element {
         filteredSlots = slotsWithPractitioner.filter((slot): slot is Slot => slot !== null);
       }
 
+      // Filter slots based on appointment type duration
+      if (selectedType) {
+        const appointmentType = appointmentTypes.find(t => t.code === selectedType);
+        if (appointmentType && appointmentType.duration) {
+          const requiredDuration = appointmentType.duration;
+          
+          // Sort slots by start time
+          const sortedSlots = [...filteredSlots].sort((a, b) => 
+            new Date(a.start || '').getTime() - new Date(b.start || '').getTime()
+          );
+          
+          // Find slots where there are enough consecutive slots for the required duration
+          const validSlots: Slot[] = [];
+          
+          for (let i = 0; i < sortedSlots.length; i++) {
+            const currentSlot = sortedSlots[i];
+            const slotDuration = currentSlot.start && currentSlot.end
+              ? Math.round((new Date(currentSlot.end).getTime() - new Date(currentSlot.start).getTime()) / 60000)
+              : 0;
+            
+            if (slotDuration >= requiredDuration) {
+              // Single slot is long enough
+              validSlots.push(currentSlot);
+            } else {
+              // Check if we can combine consecutive slots
+              let totalDuration = slotDuration;
+              let consecutiveSlots = [currentSlot];
+              
+              for (let j = i + 1; j < sortedSlots.length; j++) {
+                const nextSlot = sortedSlots[j];
+                const prevSlot = consecutiveSlots[consecutiveSlots.length - 1];
+                
+                // Check if slots are consecutive (end of previous = start of next)
+                if (prevSlot.end === nextSlot.start) {
+                  const nextDuration = nextSlot.start && nextSlot.end
+                    ? Math.round((new Date(nextSlot.end).getTime() - new Date(nextSlot.start).getTime()) / 60000)
+                    : 0;
+                  totalDuration += nextDuration;
+                  consecutiveSlots.push(nextSlot);
+                  
+                  if (totalDuration >= requiredDuration) {
+                    // We have enough consecutive slots
+                    // Store the combined slot info in the first slot
+                    const combinedSlot = {
+                      ...currentSlot,
+                      end: nextSlot.end,
+                      meta: {
+                        ...currentSlot.meta,
+                        extension: [
+                          {
+                            url: 'http://medplum.com/combined-slots',
+                            valueString: JSON.stringify(consecutiveSlots.map(s => s.id))
+                          }
+                        ]
+                      }
+                    };
+                    validSlots.push(combinedSlot);
+                    break;
+                  }
+                } else {
+                  // Slots are not consecutive
+                  break;
+                }
+              }
+            }
+          }
+          
+          filteredSlots = validSlots;
+        }
+      }
+
       setAvailableSlots(filteredSlots);
     } catch (error) {
       logger.error('Failed to search slots', error);
@@ -207,8 +278,9 @@ export function BookAppointmentPage(): JSX.Element {
             <strong>{t('common.date')} & {t('common.time')}:</strong> {bookingSlot && formatDateTime(bookingSlot.start || '')}
           </Text>
           <Text size="sm">
-            <strong>{t('common.duration')}:</strong> {bookingSlot?.start && bookingSlot?.end ? 
-              Math.round((new Date(bookingSlot.end).getTime() - new Date(bookingSlot.start).getTime()) / 60000) : 0} {t('encounter.minutes')}
+            <strong>{t('common.duration')}:</strong> {appointmentTypes.find(t => t.code === selectedType)?.duration || 
+              (bookingSlot?.start && bookingSlot?.end ? 
+                Math.round((new Date(bookingSlot.end).getTime() - new Date(bookingSlot.start).getTime()) / 60000) : 0)} {t('encounter.minutes')}
           </Text>
           
           <Textarea
@@ -299,7 +371,7 @@ export function BookAppointmentPage(): JSX.Element {
 
                 <Button
                   leftSection={<IconSearch size={16} />}
-                  onClick={handleSearch}
+                  onClick={() => handleSearch().catch(() => undefined)}
                   disabled={!selectedPatient || !selectedType || !selectedDate}
                   loading={loading}
                 >
@@ -335,13 +407,14 @@ export function BookAppointmentPage(): JSX.Element {
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm">
-                          {slot.start && slot.end ? 
-                            Math.round((new Date(slot.end).getTime() - new Date(slot.start).getTime()) / 60000) : 0} {t('common.min')}
+                          {appointmentTypes.find(t => t.code === selectedType)?.duration || 
+                            (slot.start && slot.end ? 
+                              Math.round((new Date(slot.end).getTime() - new Date(slot.start).getTime()) / 60000) : 0)} {t('common.min')}
                         </Text>
                       </Table.Td>
                       <Table.Td>
                         <Badge variant="light">
-                          {slot.serviceType?.[0]?.coding?.[0]?.display || t('appointment.general')}
+                          {appointmentTypes.find(t => t.code === selectedType)?.display || t('appointment.general')}
                         </Badge>
                       </Table.Td>
                       <Table.Td>
