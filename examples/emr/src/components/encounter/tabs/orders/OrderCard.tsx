@@ -15,54 +15,76 @@ interface OrderCardProps {
   t: any;
   onUploadImage: () => void;
   onViewImages: () => void;
+  onEnterLabResults?: () => void;
   expanded: boolean;
   setExpanded: (expanded: boolean) => void;
   onDeleteImage?: (doc: DocumentReference) => void;
 }
 
-export function OrderCard({ sr, isLab, isImaging, results, documents, t, onUploadImage, onViewImages, expanded, setExpanded, onDeleteImage }: OrderCardProps): React.ReactElement {
-  // Collect practitioner references
-  const requesterRef = sr.requester?.reference;
-  const performerRef = sr.performer?.[0]?.reference;
-  const practitionerRefs = [requesterRef, performerRef].filter((ref): ref is string => !!ref);
-  // Fetch practitioners
-  const [practitioners] = useSearchResources('Practitioner', practitionerRefs.length > 0 ? { _id: practitionerRefs.map(ref => ref.split('/')[1]).join(',') } : undefined);
-  // Helper to get display name
-  function getPractitionerName(ref?: string): string {
-    if (!ref) { return ''; }
-    const match = practitioners?.find((p: any) => `Practitioner/${p.id}` === ref);
-    if (match) {
-      return match.name?.[0]?.text || [match.name?.[0]?.given, match.name?.[0]?.family].filter(Boolean).join(' ') || ref;
+export function OrderCard({ 
+  sr, 
+  isLab, 
+  isImaging, 
+  results, 
+  documents, 
+  t, 
+  onUploadImage, 
+  onViewImages, 
+  onEnterLabResults, 
+  expanded, 
+  setExpanded, 
+  onDeleteImage 
+}: OrderCardProps): React.ReactElement {
+  // Fetch practitioners for display
+  const practitionerRefs = [
+    sr.requester?.reference,
+    sr.performer?.[0]?.reference
+  ].filter((ref): ref is string => !!ref);
+
+  const [practitioners] = useSearchResources(
+    'Practitioner',
+    practitionerRefs.length > 0 
+      ? { _id: practitionerRefs.map(ref => ref.split('/')[1]).join(',') } 
+      : undefined
+  );
+
+  const getPractitionerName = (ref?: string): string => {
+    if (!ref) return '';
+    
+    const practitioner = practitioners?.find((p: any) => `Practitioner/${p.id}` === ref);
+    if (practitioner) {
+      return practitioner.name?.[0]?.text || 
+             [practitioner.name?.[0]?.given, practitioner.name?.[0]?.family].filter(Boolean).join(' ') || 
+             ref;
     }
     return ref;
-  }
+  };
 
   return (
-    <Paper key={sr.id} p="md" withBorder>
-      <Group gap="xs" mb={4}>
-        <Badge color={isLab ? 'blue' : 'grape'} size="sm">
-          {isLab ? t('orders.lab') : t('orders.imaging')}
-        </Badge>
-        <Badge color={getServiceRequestStatusColor(sr.status)} variant="light">
-          {t(`orders.status.${sr.status}`)}
-        </Badge>
-        {sr.priority && sr.priority !== 'routine' && (
-          <Badge color="red" variant="filled" size="sm">
-            {t(`orders.priority.${sr.priority}`)}
+    <Paper p="md" withBorder>
+      <Group justify="space-between" align="flex-start" mb={4}>
+        <Group gap="xs">
+          <Badge color={isLab ? 'blue' : 'grape'} size="sm">
+            {isLab ? t('orders.lab') : t('orders.imaging')}
           </Badge>
-        )}
-        <Button
-          size="xs"
-          variant="subtle"
-          onClick={() => setExpanded(!expanded)}
-          className="ml-auto"
-        >
+          <Badge color={getServiceRequestStatusColor(sr.status)} variant="light">
+            {t(`orders.status.${sr.status}`)}
+          </Badge>
+          {sr.priority && sr.priority !== 'routine' && (
+            <Badge color="red" variant="filled" size="sm">
+              {t(`orders.priority.${sr.priority}`)}
+            </Badge>
+          )}
+        </Group>
+        <Button size="xs" variant="subtle" onClick={() => setExpanded(!expanded)}>
           {expanded ? t('orders.collapse') || 'Collapse' : t('orders.expand') || 'Expand'}
         </Button>
       </Group>
+
       <Text fw={500} size="lg">
         {sr.code?.coding?.[0]?.display || sr.code?.text || t('orders.noOrders')}
       </Text>
+
       <Group gap="xs" mt={4}>
         <Text size="xs" c="dimmed">
           {t('orders.ordered')}: {sr.authoredOn && formatDateTime(sr.authoredOn)}
@@ -73,91 +95,136 @@ export function OrderCard({ sr, isLab, isImaging, results, documents, t, onUploa
           </Text>
         )}
       </Group>
+
       <Collapse in={expanded} transitionDuration={200}>
-        {/* Expanded content: provider, reason, notes, upload, images, results */}
-        {sr.performer && sr.performer.length > 0 && (
-          <Text size="sm" c="dimmed" mt="xs">
-            {t('orders.provider')}: {getPractitionerName(sr.performer[0].reference)}
-          </Text>
-        )}
-        {sr.reasonCode && sr.reasonCode.length > 0 && (
-          <Paper bg="gray.0" p="sm" mt="xs" radius="sm">
-            <Text size="xs" c="dimmed" mb={4}>{t('orders.reason')}</Text>
-            <Text size="sm">
-              {sr.reasonCode[0].text || sr.reasonCode[0].coding?.[0]?.display}
+        <Stack gap="sm" mt="md">
+          {/* Provider Information */}
+          {sr.performer?.[0] && (
+            <Text size="sm" c="dimmed">
+              {t('orders.provider')}: {getPractitionerName(sr.performer[0].reference)}
             </Text>
-          </Paper>
-        )}
-        {sr.note && sr.note.length > 0 && (
-          <Paper bg="blue.0" p="sm" mt="xs" radius="sm">
-            <Text size="xs" c="dimmed" mb={4}>{t('orders.clinicalNotes')}</Text>
-            <Text size="sm" className="whitespace-pre-wrap">
-              {sr.note[0].text}
-            </Text>
-          </Paper>
-        )}
-        {isImaging && (
-          <Button size="xs" mt="sm" onClick={onUploadImage}>
-            Upload Image/Note
-          </Button>
-        )}
-        {isImaging && documents.length > 0 && (
-          <Paper bg="gray.1" p="sm" mt="xs" radius="sm" className="cursor-pointer"
-            onClick={onViewImages}>
-            <Text size="xs" c="dimmed" mb={4}>Attached Images</Text>
-            <Stack gap="xs">
-              {documents.map((doc, idx) => (
-                <Group key={doc.id ?? idx} gap="md" align="center">
-                  {doc.content?.[0]?.attachment?.data ? (
-                    <img
-                      src={`data:${doc.content[0].attachment.contentType};base64,${doc.content[0].attachment.data}`}
-                      alt={doc.content[0].attachment.title}
-                      className={styles.thumbnail}
-                    />
-                  ) : null}
-                  <Text fw={500}>{doc.content?.[0]?.attachment?.title}</Text>
-                  {doc.description && <Text size="sm">{doc.description}</Text>}
-                  <Text c="dimmed" size="xs" className="ml-auto">
-                    {doc.date ? formatDateTime(doc.date) : ''}
-                  </Text>
-                    <Button size="xs" color="red" variant="light" onClick={e => { e.stopPropagation(); if (onDeleteImage) { onDeleteImage(doc); } }}>
+          )}
+
+          {/* Reason */}
+          {sr.reasonCode?.[0] && (
+            <Paper bg="gray.0" p="sm" radius="sm">
+              <Text size="xs" c="dimmed" mb={4}>
+                {t('orders.reason')}
+              </Text>
+              <Text size="sm">
+                {sr.reasonCode[0].text || sr.reasonCode[0].coding?.[0]?.display}
+              </Text>
+            </Paper>
+          )}
+
+          {/* Clinical Notes */}
+          {sr.note?.[0] && (
+            <Paper bg="blue.0" p="sm" radius="sm">
+              <Text size="xs" c="dimmed" mb={4}>
+                {t('orders.clinicalNotes')}
+              </Text>
+              <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+                {sr.note[0].text}
+              </Text>
+            </Paper>
+          )}
+
+          {/* Action Buttons */}
+          <Group gap="xs">
+            {isImaging && (
+              <Button size="xs" onClick={onUploadImage}>
+                Upload Image/Note
+              </Button>
+            )}
+            {isLab && onEnterLabResults && (
+              <Button size="xs" onClick={onEnterLabResults}>
+                {results.length > 0 
+                  ? t('orders.updateResults', 'Update Results') 
+                  : t('orders.enterResults', 'Enter Results')}
+              </Button>
+            )}
+          </Group>
+
+          {/* Imaging Documents */}
+          {isImaging && documents.length > 0 && (
+            <Paper bg="gray.1" p="sm" radius="sm" style={{ cursor: 'pointer' }} onClick={onViewImages}>
+              <Text size="xs" c="dimmed" mb={4}>
+                Attached Images
+              </Text>
+              <Stack gap="xs">
+                {documents.map((doc, idx) => (
+                  <Group key={doc.id ?? idx} gap="md" align="center">
+                    {doc.content?.[0]?.attachment?.data && (
+                      <img
+                        src={`data:${doc.content[0].attachment.contentType};base64,${doc.content[0].attachment.data}`}
+                        alt={doc.content[0].attachment.title}
+                        className={styles.thumbnail}
+                      />
+                    )}
+                    <Text fw={500}>
+                      {doc.content?.[0]?.attachment?.title}
+                    </Text>
+                    {doc.description && (
+                      <Text size="sm">{doc.description}</Text>
+                    )}
+                    <Text c="dimmed" size="xs" style={{ marginLeft: 'auto' }}>
+                      {doc.date && formatDateTime(doc.date)}
+                    </Text>
+                    <Button 
+                      size="xs" 
+                      color="red" 
+                      variant="light" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteImage?.(doc);
+                      }}
+                    >
                       Delete
                     </Button>
-                </Group>
-              ))}
-            </Stack>
-          </Paper>
-        )}
-        {isLab && results.length === 0 && (
-          <Text size="xs" c="dimmed" mt="xs">No lab results</Text>
-        )}
-        {isLab && results.length > 0 && (
-          <Paper bg="gray.1" p="sm" mt="xs" radius="sm">
-            <Text size="xs" c="dimmed" mb={4}>Lab Results</Text>
-            <Stack gap="xs">
-              {results.map((obs: any, idx: any) => (
-                <Group key={idx} gap="md" align="center">
-                  <Text fw={500} className={styles.resultLabel}>{obs.code?.text}</Text>
-                  {obs.valueQuantity && (
-                    <Text>{obs.valueQuantity.value} {obs.valueQuantity.unit}</Text>
-                  )}
-                  {obs.valueString && (
-                    <Text>{obs.valueString}</Text>
-                  )}
-                  {obs.valueBoolean !== undefined && (
-                    <Text>{obs.valueBoolean ? 'Yes' : 'No'}</Text>
-                  )}
-                  {obs.valueCodeableConcept && (
-                    <Text>{obs.valueCodeableConcept.text}</Text>
-                  )}
-                  <Text c="dimmed" size="xs" className="ml-auto">
-                    {obs.effectiveDateTime ? formatDateTime(obs.effectiveDateTime) : ''}
-                  </Text>
-                </Group>
-              ))}
-            </Stack>
-          </Paper>
-        )}
+                  </Group>
+                ))}
+              </Stack>
+            </Paper>
+          )}
+
+          {/* Lab Results */}
+          {isLab && results.length === 0 && (
+            <Text size="xs" c="dimmed">
+              No lab results
+            </Text>
+          )}
+          {isLab && results.length > 0 && (
+            <Paper bg="gray.1" p="sm" radius="sm">
+              <Text size="xs" c="dimmed" mb={4}>
+                Lab Results
+              </Text>
+              <Stack gap="xs">
+                {results.map((obs: any, idx: number) => (
+                  <Group key={idx} gap="md" align="center">
+                    <Text fw={500} className={styles.resultLabel}>
+                      {obs.code?.text}
+                    </Text>
+                    {obs.valueQuantity && (
+                      <Text>
+                        {obs.valueQuantity.value} {obs.valueQuantity.unit}
+                      </Text>
+                    )}
+                    {obs.valueString && <Text>{obs.valueString}</Text>}
+                    {obs.valueBoolean !== undefined && (
+                      <Text>{obs.valueBoolean ? 'Yes' : 'No'}</Text>
+                    )}
+                    {obs.valueCodeableConcept && (
+                      <Text>{obs.valueCodeableConcept.text}</Text>
+                    )}
+                    <Text c="dimmed" size="xs" style={{ marginLeft: 'auto' }}>
+                      {obs.effectiveDateTime && formatDateTime(obs.effectiveDateTime)}
+                    </Text>
+                  </Group>
+                ))}
+              </Stack>
+            </Paper>
+          )}
+        </Stack>
       </Collapse>
     </Paper>
   );

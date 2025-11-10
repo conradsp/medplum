@@ -45,7 +45,16 @@ export function PatientPage(): JSX.Element {
 
   return (
     <Container fluid size="100%" className={styles.pageContainer} m={0}>
-      {patient && <NewEncounterModal opened={newEncounterModalOpen} onClose={() => setNewEncounterModalOpen(false)} patient={patient} />}
+      {patient && (
+        <NewEncounterModal 
+          opened={newEncounterModalOpen} 
+          onClose={() => {
+            setNewEncounterModalOpen(false);
+            triggerRefresh();
+          }} 
+          patient={patient} 
+        />
+      )}
       
       <BreadcrumbNav patient={patientBreadcrumb} />
       
@@ -63,6 +72,7 @@ export function PatientPage(): JSX.Element {
             section={section} 
             patient={patient} 
             onNewEncounter={() => setNewEncounterModalOpen(true)}
+            refreshKey={refreshKey}
           />
         </div>
       </div>

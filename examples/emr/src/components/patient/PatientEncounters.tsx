@@ -1,6 +1,6 @@
 import { Table, Text, Badge, Stack } from '@mantine/core';
 import { formatDateTime } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { Patient, Encounter } from '@medplum/fhirtypes';
 import { Loading, useSearchResources } from '@medplum/react';
 import { JSX } from 'react';
 import { useNavigate } from 'react-router';
@@ -9,15 +9,21 @@ import styles from './PatientEncounters.module.css';
 
 interface PatientEncountersProps {
   patient: Patient;
+  encounters?: Encounter[];
 }
 
-export function PatientEncounters({ patient }: PatientEncountersProps): JSX.Element {
+export function PatientEncounters({ patient, encounters: encountersProp }: PatientEncountersProps): JSX.Element {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [encounters, loading] = useSearchResources('Encounter', {
-    patient: `Patient/${patient.id}`,
-    _count: '50',
-  });
+  const [encountersFetched, loading] = useSearchResources('Encounter', 
+    !encountersProp && patient ? {
+      patient: `Patient/${patient.id}`,
+      _count: '50',
+    } : undefined
+  );
+
+  // Use prop if provided, otherwise use fetched data
+  const encounters = encountersProp || encountersFetched;
 
   if (loading) {
     return <Loading />;

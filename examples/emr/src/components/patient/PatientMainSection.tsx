@@ -1,5 +1,5 @@
 import { Patient } from '@medplum/fhirtypes';
-import { Document, ResourceTable, ResourceHistoryTable, ResourceForm } from '@medplum/react';
+import { useSearchResources } from '@medplum/react';
 import { Tabs, Paper, Group, Text, Button } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { JSX, useState } from 'react';
@@ -15,24 +15,38 @@ interface PatientMainSectionProps {
   section: string;
   patient: Patient | null;
   onNewEncounter?: () => void;
+  refreshKey?: number;
 }
 
-export function PatientMainSection({ patient, onNewEncounter }: PatientMainSectionProps): JSX.Element {
+export function PatientMainSection({ patient, onNewEncounter, refreshKey = 0 }: PatientMainSectionProps): JSX.Element {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<string>('overview');
 
+  // Fetch encounters to show count in tab header
+  const [encounters] = useSearchResources('Encounter', 
+    patient ? { patient: `Patient/${patient.id}`, _count: '50', _: refreshKey } : undefined
+  );
+
+  // Fetch observations to show count in tab header
+  const [observations] = useSearchResources('Observation',
+    patient ? { patient: `Patient/${patient.id}`, _count: '100', _: refreshKey } : undefined
+  );
+
+  // Fetch clinical notes (DocumentReference) to show count in tab header
+  const [documents] = useSearchResources('DocumentReference',
+    patient ? { patient: `Patient/${patient.id}`, _count: '50', _: refreshKey, _sort: '-date' } : undefined
+  );
+
   if (!patient) {
     return (
-      <Document>
-        <div className={styles.emptyState}>
-          {t('patient.selectToViewDetails', 'Select a patient to view details.')}
-        </div>
-      </Document>
+      <div className={styles.emptyState}>
+        {t('patient.selectToViewDetails', 'Select a patient to view details.')}
+      </div>
     );
   }
 
   return (
-    <Document>
+    <>
       {/* Quick Actions */}
       <Paper shadow="sm" p="md" mb="md" withBorder className={styles.quickActionsPaper}>
         <Group justify="space-between">
@@ -54,47 +68,38 @@ export function PatientMainSection({ patient, onNewEncounter }: PatientMainSecti
       <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'overview')}>
         <Tabs.List>
           <Tabs.Tab value="overview">{t('patient.tab.overview', 'Overview')}</Tabs.Tab>
+          <Tabs.Tab value="encounter">
+            {t('patient.tab.encounter', 'Encounter')} {encounters && encounters.length > 0 && `(${encounters.length})`}
+          </Tabs.Tab>
+          <Tabs.Tab value="observations">
+            {t('patient.tab.observations', 'Observations')} {observations && observations.length > 0 && `(${observations.length})`}
+          </Tabs.Tab>
+          <Tabs.Tab value="clinical">
+            {t('patient.tab.clinicalNotes', 'Clinical Notes')} {documents && documents.length > 0 && `(${documents.length})`}
+          </Tabs.Tab>
           <Tabs.Tab value="timeline">{t('patient.tab.timeline', 'Timeline')}</Tabs.Tab>
-          <Tabs.Tab value="edit">{t('patient.tab.edit', 'Edit')}</Tabs.Tab>
-          <Tabs.Tab value="encounter">{t('patient.tab.encounter', 'Encounter')}</Tabs.Tab>
-          <Tabs.Tab value="observations">{t('patient.tab.observations', 'Observations')}</Tabs.Tab>
-          <Tabs.Tab value="clinical">{t('patient.tab.clinicalNotes', 'Clinical Notes')}</Tabs.Tab>
-          <Tabs.Tab value="details">{t('patient.tab.details', 'Details')}</Tabs.Tab>
-          <Tabs.Tab value="history">{t('patient.tab.history', 'History')}</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="overview" pt="md">
           <PatientOverview patient={patient} />
         </Tabs.Panel>
 
-        <Tabs.Panel value="timeline" pt="md">
-          <PatientTimeline patient={patient} />
-        </Tabs.Panel>
-
-        <Tabs.Panel value="edit" pt="md">
-          <ResourceForm defaultValue={patient} onSubmit={() => {}} />
-        </Tabs.Panel>
-
         <Tabs.Panel value="encounter" pt="md">
-          <PatientEncounters patient={patient} />
+          <PatientEncounters patient={patient} encounters={encounters} />
         </Tabs.Panel>
 
         <Tabs.Panel value="observations" pt="md">
-          <PatientObservations patient={patient} />
+          <PatientObservations patient={patient} observations={observations} />
         </Tabs.Panel>
 
         <Tabs.Panel value="clinical" pt="md">
-          <ClinicalImpressionDisplay patient={patient} />
+          <ClinicalImpressionDisplay patient={patient} documents={documents} />
         </Tabs.Panel>
 
-        <Tabs.Panel value="details" pt="md">
-          <ResourceTable value={patient} />
-        </Tabs.Panel>
-
-        <Tabs.Panel value="history" pt="md">
-          <ResourceHistoryTable resourceType="Patient" id={patient.id as string} />
+        <Tabs.Panel value="timeline" pt="md">
+          <PatientTimeline patient={patient} />
         </Tabs.Panel>
       </Tabs>
-    </Document>
+    </>
   );
 }

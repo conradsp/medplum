@@ -24,8 +24,6 @@ import { NotesTab } from '../../components/encounter/tabs/NotesTab';
 import { ProceduresTab } from '../../components/encounter/tabs/ProceduresTab';
 import { DiagnosesTab } from '../../components/encounter/tabs/DiagnosesTab';
 import { MedicationsTab } from '../../components/encounter/tabs/MedicationsTab';
-import { DetailsTab } from '../../components/encounter/tabs/DetailsTab';
-import { HistoryTab } from '../../components/encounter/tabs/HistoryTab';
 import { isVitalSign } from '../../utils/encounterUtils';
 import { getEncounterPrescriptions, getEncounterAdministrations } from '../../utils/medications';
 import { useTranslation } from 'react-i18next';
@@ -71,8 +69,9 @@ export function EncounterPage({ medplum, encounter, patient }: EncounterPageProp
   };
 
   // Search for related resources - search by patient and filter by encounter client-side
+  // Adding refreshKey to the search params forces the hook to refetch when refreshKey changes
   const [allObservations] = useSearchResources('Observation', 
-    patient ? { patient: `Patient/${patient.id}`, _count: '100' } : undefined
+    patient ? { patient: `Patient/${patient.id}`, _count: '100', _: refreshKey } : undefined
   );
   
   // Filter to only observations for THIS encounter
@@ -93,14 +92,14 @@ export function EncounterPage({ medplum, encounter, patient }: EncounterPageProp
   ).size : 0;
   
   const [allProcedures] = useSearchResources('Procedure', 
-    patient ? { patient: `Patient/${patient.id}`, _count: '100' } : undefined
+    patient ? { patient: `Patient/${patient.id}`, _count: '100', _: refreshKey } : undefined
   );
   const procedures = allProcedures?.filter(proc => 
     proc.encounter?.reference === `Encounter/${encounter?.id}`
   );
   
   const [allConditions] = useSearchResources('Condition', 
-    patient ? { patient: `Patient/${patient.id}`, _count: '100' } : undefined
+    patient ? { patient: `Patient/${patient.id}`, _count: '100', _: refreshKey } : undefined
   );
   const conditions = allConditions?.filter(cond => 
     cond.encounter?.reference === `Encounter/${encounter?.id}`
@@ -108,14 +107,14 @@ export function EncounterPage({ medplum, encounter, patient }: EncounterPageProp
   
   // Search for clinical notes and documents
   const [allDocuments] = useSearchResources('DocumentReference',
-    patient ? { patient: `Patient/${patient.id}`, _count: '50' } : undefined
+    patient ? { patient: `Patient/${patient.id}`, _count: '50', _: refreshKey } : undefined
   );
   const documents = allDocuments?.filter(doc => 
     doc.context?.encounter?.some(enc => enc.reference === `Encounter/${encounter?.id}`)
   );
   
   const [allDiagnosticReports] = useSearchResources('DiagnosticReport',
-    patient ? { patient: `Patient/${patient.id}`, _count: '50' } : undefined
+    patient ? { patient: `Patient/${patient.id}`, _count: '50', _: refreshKey } : undefined
   );
   const diagnosticReports = allDiagnosticReports?.filter(report => 
     report.encounter?.reference === `Encounter/${encounter?.id}`
@@ -123,7 +122,7 @@ export function EncounterPage({ medplum, encounter, patient }: EncounterPageProp
   
   // Search for service requests (lab/imaging orders)
   const [allServiceRequests] = useSearchResources('ServiceRequest',
-    patient ? { patient: `Patient/${patient.id}`, _count: '100' } : undefined
+    patient ? { patient: `Patient/${patient.id}`, _count: '100', _: refreshKey } : undefined
   );
   const serviceRequests = allServiceRequests?.filter(sr => 
     sr.encounter?.reference === `Encounter/${encounter?.id}`
@@ -279,8 +278,6 @@ export function EncounterPage({ medplum, encounter, patient }: EncounterPageProp
               <Tabs.Tab value="medications">
                 {t('medications.tab', 'Medications')} {prescriptions && prescriptions.length > 0 && `(${prescriptions.length})`}
               </Tabs.Tab>
-              <Tabs.Tab value="details">{t('details.tab', 'Details')}</Tabs.Tab>
-              <Tabs.Tab value="history">{t('history.tab', 'History')}</Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="overview" pt="md">
@@ -325,14 +322,6 @@ export function EncounterPage({ medplum, encounter, patient }: EncounterPageProp
                   setAdministerMedicationModalOpen(true);
                 }}
               />
-            </Tabs.Panel>
-
-            <Tabs.Panel value="details" pt="md">
-              <DetailsTab encounter={encounter} />
-            </Tabs.Panel>
-
-            <Tabs.Panel value="history" pt="md">
-              <HistoryTab encounter={encounter} />
             </Tabs.Panel>
           </Tabs>
         </Document>

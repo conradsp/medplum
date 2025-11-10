@@ -1,10 +1,11 @@
 import { Stack, Modal, FileInput, Textarea, Button } from '@mantine/core';
-import { ServiceRequest, DocumentReference } from '@medplum/fhirtypes';
+import { ServiceRequest, DocumentReference, ActivityDefinition } from '@medplum/fhirtypes';
 import { JSX, useState } from 'react';
 import { useMedplum, useSearchResources } from '@medplum/react';
 import { useTranslation } from 'react-i18next';
 import { EnterLabResultModal } from '../EnterLabResultModal';
 import { notifications } from '@mantine/notifications';
+import { getLabTests } from '../../../utils/labTests';
 import Lightbox from 'yet-another-react-lightbox';
 import Thumbnails from 'yet-another-react-lightbox/plugins/thumbnails';
 import Zoom from 'yet-another-react-lightbox/plugins/zoom';
@@ -22,7 +23,7 @@ interface OrdersTabProps {
 export function OrdersTab({ serviceRequests }: OrdersTabProps): JSX.Element {
   const medplum = useMedplum();
   const { t } = useTranslation();
-  const [modalOpen, setModalOpen] = useState(false);
+  const [labResultModalOpen, setLabResultModalOpen] = useState(false);
   const [resultFields, setResultFields] = useState<any[]>([]);
   const [activeOrder, setActiveOrder] = useState<ServiceRequest | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -44,8 +45,8 @@ export function OrdersTab({ serviceRequests }: OrdersTabProps): JSX.Element {
 
   // Get encounter reference from the first order, or undefined
   const encounterRef = serviceRequests?.[0]?.encounter?.reference;
-  // Fetch all observations for the encounter
-  const [allObservations] = useSearchResources('Observation', encounterRef ? { encounter: encounterRef, _count: '100' } : undefined);
+  // Fetch all observations for the encounter, add refreshKey to force reload
+  const [allObservations] = useSearchResources('Observation', encounterRef ? { encounter: encounterRef, _count: '100', _: refreshKey } : undefined);
   // Fetch DocumentReferences for the encounter, add refreshKey to force reload
   const [documentReferences] = useSearchResources('DocumentReference', encounterRef ? { encounter: encounterRef, _count: '100', _: refreshKey } : undefined);
 
@@ -82,8 +83,9 @@ export function OrdersTab({ serviceRequests }: OrdersTabProps): JSX.Element {
         await medplum.createResource(obs);
       }
     }
-    setModalOpen(false);
+    setLabResultModalOpen(false);
     setActiveOrder(null);
+    setRefreshKey(k => k + 1);
   };
 
   async function handleUploadImage(): Promise<void> {
@@ -144,6 +146,41 @@ export function OrdersTab({ serviceRequests }: OrdersTabProps): JSX.Element {
     }
   }
 
+  async function handleEnterLabResults(sr: ServiceRequest): Promise<void> {
+    const testCode = sr.code?.coding?.[0]?.code || sr.code?.text;
+    if (!testCode) {
+      notifications.show({ title: 'Error', message: 'Cannot determine test type', color: 'red' });
+      return;
+    }
+    const labTests = await getLabTests(medplum);
+    const matchingTest = labTests.find(
+      (def) => {
+        const defCode = def.identifier?.find(id => id.system === 'http://medplum.com/emr/lab-test')?.value;
+        const defTitle = def.title || def.code?.text;
+        return defCode === testCode || defTitle === sr.code?.coding?.[0]?.display || defTitle === sr.code?.text;
+      }
+    );
+    
+    if (matchingTest) {
+      // Extract result fields from extension
+      const resultFieldsExt = matchingTest.extension?.find(ext => ext.url === 'resultFields');
+      if (resultFieldsExt?.valueString) {
+        try {
+          const fields = JSON.parse(resultFieldsExt.valueString);
+          setResultFields(fields);
+        } catch {
+          setResultFields([{ name: 'result', label: sr.code?.coding?.[0]?.display || sr.code?.text || 'Result', type: 'string' }]);
+        }
+      } else {
+        setResultFields([{ name: 'result', label: sr.code?.coding?.[0]?.display || sr.code?.text || 'Result', type: 'string' }]);
+      }
+    } else {
+      setResultFields([{ name: 'result', label: sr.code?.coding?.[0]?.display || sr.code?.text || 'Result', type: 'string' }]);
+    }
+    setActiveOrder(sr);
+    setLabResultModalOpen(true);
+  }
+
   return (
     <>
       <Stack gap="sm">
@@ -174,6 +211,7 @@ export function OrdersTab({ serviceRequests }: OrdersTabProps): JSX.Element {
                 setViewerOrderName(sr.code?.coding?.[0]?.display || sr.code?.text || 'Image Gallery');
                 setViewerOpen(true);
               }}
+              onEnterLabResults={() => handleEnterLabResults(sr)}
               expanded={isExpanded}
               setExpanded={(val) => setExpandedOrders(prev => ({ ...prev, [sr.id ?? '']: val }))}
               onDeleteImage={handleDeleteImage}
@@ -221,9 +259,9 @@ export function OrdersTab({ serviceRequests }: OrdersTabProps): JSX.Element {
         </div>
       </Modal>
       <EnterLabResultModal
-        opened={modalOpen}
+        opened={labResultModalOpen}
         onClose={() => {
-          setModalOpen(false);
+          setLabResultModalOpen(false);
           setActiveOrder(null);
         }}
         resultFields={resultFields}

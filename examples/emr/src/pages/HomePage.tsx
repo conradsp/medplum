@@ -12,8 +12,10 @@ export function HomePage(): JSX.Element {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [newPatientModalOpen, setNewPatientModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [patients, loading] = useSearchResources('Patient', {
-    _count: '10'
+    _count: '10',
+    _: refreshKey
   });
 
   if (loading) {
@@ -40,7 +42,13 @@ export function HomePage(): JSX.Element {
 
   return (
     <Document>
-      <NewPatientModal opened={newPatientModalOpen} onClose={() => setNewPatientModalOpen(false)} />
+      <NewPatientModal 
+        opened={newPatientModalOpen} 
+        onClose={() => {
+          setNewPatientModalOpen(false);
+          setRefreshKey(prev => prev + 1);
+        }} 
+      />
       
       <Paper shadow="sm" p="lg" withBorder className={styles.paperTop}>
         <Group justify="space-between" mb="lg">

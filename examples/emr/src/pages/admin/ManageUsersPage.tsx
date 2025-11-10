@@ -19,15 +19,18 @@ export function ManageUsersPage(): JSX.Element {
   const [newProviderModalOpen, setNewProviderModalOpen] = useState(false);
   const [editRolesModalOpen, setEditRolesModalOpen] = useState(false);
   const [selectedPractitioner, setSelectedPractitioner] = useState<Practitioner | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   
   const [practitioners, practitionersLoading] = useSearchResources('Practitioner', {
     _count: '50',
     _sort: '-_lastUpdated',
+    _: refreshKey
   });
 
   const [patients, patientsLoading] = useSearchResources('Patient', {
     _count: '50',
     _sort: '-_lastUpdated',
+    _: refreshKey
   });
 
   const handleEditRoles = (practitioner: Practitioner): void => {
@@ -38,6 +41,7 @@ export function ManageUsersPage(): JSX.Element {
   const handleRolesModalClose = (): void => {
     setEditRolesModalOpen(false);
     setSelectedPractitioner(null);
+    setRefreshKey(prev => prev + 1);
   };
 
   const handleDeletePractitioner = async (practitioner: Practitioner): Promise<void> => {
@@ -64,7 +68,7 @@ export function ManageUsersPage(): JSX.Element {
         message: t('users.deleteSuccessMessage'),
         color: 'green',
       });
-      window.location.reload();
+      setRefreshKey(prev => prev + 1);
     } catch {
       notifications.show({
         title: t('users.deleteErrorTitle'),
@@ -76,7 +80,13 @@ export function ManageUsersPage(): JSX.Element {
 
   return (
     <Document>
-      <NewProviderModal opened={newProviderModalOpen} onClose={() => setNewProviderModalOpen(false)} />
+      <NewProviderModal 
+        opened={newProviderModalOpen} 
+        onClose={() => {
+          setNewProviderModalOpen(false);
+          setRefreshKey(prev => prev + 1);
+        }} 
+      />
       <EditUserRolesModal 
         opened={editRolesModalOpen} 
         onClose={handleRolesModalClose}
