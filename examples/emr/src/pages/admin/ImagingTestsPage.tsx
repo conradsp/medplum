@@ -6,6 +6,7 @@ import { ActivityDefinition } from '@medplum/fhirtypes';
 import { useTranslation } from 'react-i18next';
 import { getImagingTests, initializeDefaultImagingTests, deleteImagingTest } from '../../utils/imagingTests';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
+import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
 import { EditImagingTestModal } from '../../components/admin/EditImagingTestModal';
 import { getPriceFromResource } from '../../utils/billing';
 import { showSuccess, handleError } from '../../utils/errorHandling';
@@ -18,6 +19,8 @@ export function ImagingTestsPage(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTest, setSelectedTest] = useState<ActivityDefinition | null>(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [testToDelete, setTestToDelete] = useState<ActivityDefinition | null>(null);
 
   const loadImagingTests = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -50,18 +53,22 @@ export function ImagingTestsPage(): JSX.Element {
     setEditModalOpen(true);
   };
 
-  const handleDelete = async (test: ActivityDefinition): Promise<void> => {
-    if (!test.identifier?.[0]?.value) {
+  const handleDelete = (test: ActivityDefinition): void => {
+    setTestToDelete(test);
+    setConfirmDialogOpen(true);
+  };
+
+  const confirmDelete = async (): Promise<void> => {
+    setConfirmDialogOpen(false);
+    if (!testToDelete?.identifier?.[0]?.value) {
       return;
     }
-    if (window.confirm(t('admin.imagingTests.confirmDelete', { name: test.title }))) {
-      try {
-        await deleteImagingTest(medplum, test.identifier[0].value);
-        showSuccess(t('admin.imagingTests.deleteSuccess'));
-        await loadImagingTests();
-      } catch (error) {
-        handleError(error, t('message.error.delete'));
-      }
+    try {
+      await deleteImagingTest(medplum, testToDelete.identifier[0].value);
+      showSuccess(t('admin.imagingTests.deleteSuccess'));
+      await loadImagingTests();
+    } catch (error) {
+      handleError(error, t('message.error.delete'));
     }
   };
 
@@ -211,6 +218,15 @@ export function ImagingTestsPage(): JSX.Element {
         opened={editModalOpen}
         onClose={handleModalClose}
         test={selectedTest}
+      />
+      <ConfirmDialog
+        opened={confirmDialogOpen}
+        onCancel={() => setConfirmDialogOpen(false)}
+        onConfirm={confirmDelete}
+        title={t('admin.imagingTests.confirmDeleteTitle')}
+        message={t('admin.imagingTests.confirmDeleteMessage', { name: testToDelete?.title })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
       />
     </Container>
   );

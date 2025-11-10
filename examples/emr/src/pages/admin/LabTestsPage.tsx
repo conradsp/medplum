@@ -6,6 +6,7 @@ import { ActivityDefinition } from '@medplum/fhirtypes';
 import { useTranslation } from 'react-i18next';
 import { getLabTests, initializeDefaultLabTests, deleteLabTest } from '../../utils/labTests';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
+import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
 import { EditLabTestModal } from '../../components/admin/EditLabTestModal';
 import { getPriceFromResource } from '../../utils/billing';
 import { showSuccess, handleError } from '../../utils/errorHandling';
@@ -18,6 +19,8 @@ export function LabTestsPage(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTest, setSelectedTest] = useState<ActivityDefinition | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [testToDelete, setTestToDelete] = useState<ActivityDefinition | null>(null);
 
   const loadLabTests = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -54,15 +57,28 @@ export function LabTestsPage(): JSX.Element {
     if (!test.identifier?.[0]?.value) {
       return;
     }
-    if (window.confirm(t('admin.labTests.confirmDelete', { name: test.title }))) {
-      try {
-        await deleteLabTest(medplum, test.identifier[0].value);
-        showSuccess(t('admin.labTests.deleteSuccess'));
-        await loadLabTests();
-      } catch (error) {
-        handleError(error, t('message.error.delete'));
-      }
+    setTestToDelete(test);
+    setConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async (): Promise<void> => {
+    if (!testToDelete?.identifier?.[0]?.value) return;
+    
+    setConfirmOpen(false);
+    try {
+      await deleteLabTest(medplum, testToDelete.identifier[0].value);
+      showSuccess(t('admin.labTests.deleteSuccess'));
+      await loadLabTests();
+    } catch (error) {
+      handleError(error, t('message.error.delete'));
+    } finally {
+      setTestToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = (): void => {
+    setConfirmOpen(false);
+    setTestToDelete(null);
   };
 
   const handleModalClose = async (saved: boolean): Promise<void> => {
@@ -97,6 +113,16 @@ export function LabTestsPage(): JSX.Element {
     <Container size="xl" className={styles.container}>
       <BreadcrumbNav />
       
+      <ConfirmDialog
+        opened={confirmOpen}
+        title={t('common.confirmDelete')}
+        message={t('admin.labTests.confirmDelete', { name: testToDelete?.title })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
+
       <Group justify="space-between" mb="xl">
         <div>
           <Title order={2}>{t('admin.labTests.title')}</Title>

@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { handleError, showSuccess } from '../../utils/errorHandling';
 import { logger } from '../../utils/logger';
 import { getAllDiagnosisCodes, initializeDefaultDiagnosisCodes, addDiagnosisCode, updateDiagnosisCode, deleteDiagnosisCode } from '../../utils/diagnosisCodes';
+import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
 import styles from './DiagnosisCodesPage.module.css';
 
 export function DiagnosisCodesPage(): JSX.Element {
@@ -21,6 +22,8 @@ export function DiagnosisCodesPage(): JSX.Element {
     display: '',
     system: 'http://hl7.org/fhir/sid/icd-10',
   });
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [codeToDelete, setCodeToDelete] = useState<ValueSetExpansionContains | null>(null);
 
   useEffect(() => {
     loadCodes();
@@ -99,16 +102,22 @@ export function DiagnosisCodesPage(): JSX.Element {
   };
 
   const handleDelete = async (code: ValueSetExpansionContains) => {
-    if (!confirm(t('admin.diagnosisCodes.deleteConfirm', { code: code.code }))) {
-      return;
-    }
+    setCodeToDelete(code);
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!codeToDelete) return;
 
     try {
-      await deleteDiagnosisCode(medplum, code.code!, code.system!);
+      await deleteDiagnosisCode(medplum, codeToDelete.code!, codeToDelete.system!);
       showSuccess(t('admin.diagnosisCodes.deleteSuccess'));
       loadCodes();
     } catch (error) {
       handleError(error, t('admin.diagnosisCodes.deleteError'));
+    } finally {
+      setConfirmOpen(false);
+      setCodeToDelete(null);
     }
   };
 
@@ -241,6 +250,16 @@ export function DiagnosisCodesPage(): JSX.Element {
           </Group>
         </Stack>
       </Modal>
+
+      <ConfirmDialog
+        opened={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title={t('admin.diagnosisCodes.deleteConfirmTitle')}
+        message={t('admin.diagnosisCodes.deleteConfirmMessage', { code: codeToDelete?.code })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+      />
     </Container>
   );
 }

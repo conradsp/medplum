@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { handleError, showSuccess } from '../../utils/errorHandling';
 import { getDiagnosticProviders, initializeDefaultDiagnosticProviders, deleteDiagnosticProvider } from '../../utils/diagnosticProviders';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
+import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
 import { EditDiagnosticProviderModal } from '../../components/admin/EditDiagnosticProviderModal';
 import styles from './DiagnosticProvidersPage.module.css';
 
@@ -17,6 +18,8 @@ export function DiagnosticProvidersPage(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<Organization | null>(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [providerToDelete, setProviderToDelete] = useState<Organization | null>(null);
 
   const loadProviders = async () => {
     setLoading(true);
@@ -49,19 +52,25 @@ export function DiagnosticProvidersPage(): JSX.Element {
     setEditModalOpen(true);
   };
 
-  const handleDelete = async (provider: Organization) => {
-    if (!provider.identifier || !provider.identifier[0]?.value) {
+  const handleDelete = (provider: Organization) => {
+    setProviderToDelete(provider);
+    setConfirmDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!providerToDelete?.identifier || !providerToDelete.identifier[0]?.value) {
       return;
     }
 
-    if (window.confirm(t('admin.diagnosticProviders.deleteConfirm', { name: provider.name }))) {
-      try {
-        await deleteDiagnosticProvider(medplum, provider.identifier[0].value);
-        showSuccess(t('admin.diagnosticProviders.deleteSuccess'));
-        await loadProviders();
-      } catch (error) {
-        handleError(error, t('admin.diagnosticProviders.deleteError'));
-      }
+    try {
+      await deleteDiagnosticProvider(medplum, providerToDelete.identifier[0].value);
+      showSuccess(t('admin.diagnosticProviders.deleteSuccess'));
+      await loadProviders();
+    } catch (error) {
+      handleError(error, t('admin.diagnosticProviders.deleteError'));
+    } finally {
+      setConfirmDialogOpen(false);
+      setProviderToDelete(null);
     }
   };
 
@@ -217,6 +226,15 @@ export function DiagnosticProvidersPage(): JSX.Element {
         opened={editModalOpen}
         onClose={handleModalClose}
         provider={selectedProvider}
+      />
+      <ConfirmDialog
+        opened={confirmDialogOpen}
+        onCancel={() => setConfirmDialogOpen(false)}
+        onConfirm={confirmDelete}
+        title={t('admin.diagnosticProviders.deleteConfirmTitle')}
+        message={t('admin.diagnosticProviders.deleteConfirmMessage', { name: providerToDelete?.name })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
       />
     </Container>
   );

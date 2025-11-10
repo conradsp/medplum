@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { getNoteTemplates, initializeDefaultTemplates } from '../../utils/noteTemplates';
 import { EditNoteTemplateModal } from '../../components/admin/EditNoteTemplateModal';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
+import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
 import { showSuccess, handleError } from '../../utils/errorHandling';
 import styles from './NoteTemplatesPage.module.css';
 
@@ -18,6 +19,8 @@ export function NoteTemplatesPage(): JSX.Element {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Questionnaire | null>(null);
   const [initializing, setInitializing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<Questionnaire | null>(null);
 
   const loadTemplates = async () => {
     setLoading(true);
@@ -55,16 +58,28 @@ export function NoteTemplatesPage(): JSX.Element {
 
   const handleDelete = async (template: Questionnaire) => {
     if (!template.id) return;
+    setTemplateToDelete(template);
+    setConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!templateToDelete?.id) return;
     
-    if (confirm(t('admin.noteTemplates.confirmDelete', { name: template.title }))) {
-      try {
-        await medplum.deleteResource('Questionnaire', template.id);
-        await loadTemplates();
-        showSuccess(t('admin.noteTemplates.deleteSuccess'));
-      } catch (error) {
-        handleError(error, t('message.error.delete'));
-      }
+    setConfirmOpen(false);
+    try {
+      await medplum.deleteResource('Questionnaire', templateToDelete.id);
+      await loadTemplates();
+      showSuccess(t('admin.noteTemplates.deleteSuccess'));
+    } catch (error) {
+      handleError(error, t('message.error.delete'));
+    } finally {
+      setTemplateToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setConfirmOpen(false);
+    setTemplateToDelete(null);
   };
 
   const handleModalClose = () => {
@@ -81,6 +96,16 @@ export function NoteTemplatesPage(): JSX.Element {
         opened={editModalOpen}
         onClose={handleModalClose}
         template={selectedTemplate}
+      />
+
+      <ConfirmDialog
+        opened={confirmOpen}
+        title={t('common.confirmDelete')}
+        message={t('admin.noteTemplates.confirmDelete', { name: templateToDelete?.title })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
       />
 
       <Paper shadow="sm" p="lg" withBorder className={styles.paper}>

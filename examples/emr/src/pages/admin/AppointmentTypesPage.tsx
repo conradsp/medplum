@@ -11,6 +11,7 @@ import {
 } from '../../utils/appointmentTypes';
 import { EditAppointmentTypeModal } from '../../components/admin/EditAppointmentTypeModal';
 import { BreadcrumbNav } from '../../components/shared/BreadcrumbNav';
+import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
 import { showSuccess, handleError } from '../../utils/errorHandling';
 import styles from './AppointmentTypesPage.module.css';
 
@@ -22,6 +23,8 @@ export function AppointmentTypesPage(): JSX.Element {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<AppointmentTypeDefinition | null>(null);
   const [initializing, setInitializing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [typeToDelete, setTypeToDelete] = useState<AppointmentTypeDefinition | null>(null);
 
   const loadTypes = async () => {
     setLoading(true);
@@ -58,15 +61,28 @@ export function AppointmentTypesPage(): JSX.Element {
   };
 
   const handleDelete = async (type: AppointmentTypeDefinition) => {
-    if (confirm(t('admin.appointmentTypes.confirmDelete', { name: type.display }))) {
-      try {
-        await deleteAppointmentType(medplum, type.code);
-        await loadTypes();
-        showSuccess(t('admin.appointmentTypes.deleteSuccess'));
-      } catch (error) {
-        handleError(error, t('message.error.delete'));
-      }
+    setTypeToDelete(type);
+    setConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!typeToDelete) return;
+    
+    setConfirmOpen(false);
+    try {
+      await deleteAppointmentType(medplum, typeToDelete.code);
+      await loadTypes();
+      showSuccess(t('admin.appointmentTypes.deleteSuccess'));
+    } catch (error) {
+      handleError(error, t('message.error.delete'));
+    } finally {
+      setTypeToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setConfirmOpen(false);
+    setTypeToDelete(null);
   };
 
   const handleModalClose = () => {
@@ -83,6 +99,16 @@ export function AppointmentTypesPage(): JSX.Element {
         opened={editModalOpen}
         onClose={handleModalClose}
         appointmentType={selectedType}
+      />
+
+      <ConfirmDialog
+        opened={confirmOpen}
+        title={t('common.confirmDelete')}
+        message={t('admin.appointmentTypes.confirmDelete', { name: typeToDelete?.display })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
       />
 
       <Paper shadow="sm" p="lg" withBorder className={styles.paper}>

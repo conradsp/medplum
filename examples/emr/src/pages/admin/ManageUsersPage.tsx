@@ -6,6 +6,7 @@ import { IconUser, IconStethoscope, IconPlus, IconShield, IconTrash } from '@tab
 import { JSX, useState } from 'react';
 import { NewProviderModal } from '../../components/admin/NewProviderModal';
 import { EditUserRolesModal } from '../../components/admin/EditUserRolesModal';
+import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
 import { getUserRoles } from '../../utils/permissionUtils';
 import { ROLE_LABELS } from '../../utils/permissions';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +21,8 @@ export function ManageUsersPage(): JSX.Element {
   const [editRolesModalOpen, setEditRolesModalOpen] = useState(false);
   const [selectedPractitioner, setSelectedPractitioner] = useState<Practitioner | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [practitionerToDelete, setPractitionerToDelete] = useState<Practitioner | null>(null);
   
   const [practitioners, practitionersLoading] = useSearchResources('Practitioner', {
     _count: '50',
@@ -44,16 +47,15 @@ export function ManageUsersPage(): JSX.Element {
     setRefreshKey(prev => prev + 1);
   };
 
-  const handleDeletePractitioner = async (practitioner: Practitioner): Promise<void> => {
-    // Use Mantine notifications for confirmation instead of alert/confirm
-    notifications.show({
-      title: t('users.deleteConfirmTitle'),
-      message: t('users.deleteConfirmMessage'),
-      color: 'yellow',
-      autoClose: 5000,
-    });
-    // You may want to use a custom modal for confirmation, but for now, proceed with deletion
-    if (!practitioner.id) {
+  const handleDeletePractitioner = (practitioner: Practitioner): void => {
+    setPractitionerToDelete(practitioner);
+    setConfirmDialogOpen(true);
+  };
+
+  const confirmDelete = async (): Promise<void> => {
+    setConfirmDialogOpen(false);
+    const practitioner = practitionerToDelete;
+    if (!practitioner || !practitioner.id) {
       notifications.show({
         title: t('users.deleteErrorTitle'),
         message: t('users.deleteErrorMessage'),
@@ -91,6 +93,15 @@ export function ManageUsersPage(): JSX.Element {
         opened={editRolesModalOpen} 
         onClose={handleRolesModalClose}
         practitioner={selectedPractitioner}
+      />
+      <ConfirmDialog
+        opened={confirmDialogOpen}
+        onCancel={() => setConfirmDialogOpen(false)}
+        onConfirm={confirmDelete}
+        title={t('users.deleteConfirmTitle')}
+        message={t('users.deleteConfirmMessage')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
       />
       
       <Paper shadow="sm" p="lg" withBorder className={styles.paper}>
